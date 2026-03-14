@@ -3,6 +3,10 @@ import type { ChoreTemplate, ChoreInstance, Kid } from '../types';
 import { useAuth } from '../context/AuthContext';
 import * as api from '../api/client';
 
+function formatDate(dateStr: string): string {
+  return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
 export default function ChoreBoardPage() {
   const { isKid } = useAuth();
 
@@ -130,9 +134,20 @@ function ParentChoreView() {
   if (loading) return <div className="loading-spinner"><div className="spinner" /></div>;
 
   const today = new Date().toISOString().split('T')[0];
-  const todayInstances = instances.filter(i => i.due_date === today);
-  const upcomingInstances = instances.filter(i => i.due_date > today && i.status === 'pending');
+  const todayInstances = instances.filter(i => i.due_date === today && i.status === 'pending');
   const completedInstances = instances.filter(i => i.status === 'completed');
+
+  // For upcoming: only show the next instance per template (or per title for ad-hoc)
+  const allUpcoming = instances.filter(i => i.due_date > today && i.status === 'pending');
+  const seenKeys = new Set<string>();
+  const upcomingInstances: ChoreInstance[] = [];
+  for (const inst of allUpcoming) {
+    const key = inst.chore_template_id != null ? `tpl-${inst.chore_template_id}` : `adhoc-${inst.id}`;
+    if (!seenKeys.has(key)) {
+      seenKeys.add(key);
+      upcomingInstances.push(inst);
+    }
+  }
 
   const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -234,7 +249,7 @@ function ParentChoreView() {
                   <strong>{inst.title}</strong>
                   {inst.amount != null && <span className="badge badge-success" style={{ marginLeft: '0.5rem' }}>${Number(inst.amount).toFixed(2)}</span>}
                   <span style={{ marginLeft: '0.5rem', color: 'var(--text-secondary)' }}>
-                    {inst.kid_name || inst.claimed_by_name || 'Unassigned'} &middot; {inst.due_date}
+                    {inst.kid_name || inst.claimed_by_name || 'Unassigned'} &middot; {formatDate(inst.due_date)}
                   </span>
                 </div>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -254,7 +269,7 @@ function ParentChoreView() {
           {todayInstances.length === 0 ? (
             <p style={{ color: 'var(--text-secondary)' }}>No chores for today.</p>
           ) : todayInstances.map(inst => (
-            <ChoreInstanceRow key={inst.id} instance={inst} />
+            <ChoreInstanceRow key={inst.id} instance={inst} showDate />
           ))}
         </div>
       </div>
@@ -264,8 +279,8 @@ function ParentChoreView() {
         <div className="card" style={{ marginBottom: '1.5rem' }}>
           <div className="card-header"><h3>Upcoming</h3></div>
           <div className="card-body">
-            {upcomingInstances.slice(0, 20).map(inst => (
-              <ChoreInstanceRow key={inst.id} instance={inst} />
+            {upcomingInstances.map(inst => (
+              <ChoreInstanceRow key={inst.id} instance={inst} showDate />
             ))}
           </div>
         </div>
@@ -299,7 +314,7 @@ function ParentChoreView() {
   );
 }
 
-function ChoreInstanceRow({ instance: inst }: { instance: ChoreInstance }) {
+function ChoreInstanceRow({ instance: inst, showDate }: { instance: ChoreInstance; showDate?: boolean }) {
   const statusColors: Record<string, string> = {
     pending: 'var(--warning-color)',
     completed: 'var(--info-color)',
@@ -314,6 +329,7 @@ function ChoreInstanceRow({ instance: inst }: { instance: ChoreInstance }) {
         {inst.amount != null && <span className="badge badge-success" style={{ marginLeft: '0.5rem' }}>${Number(inst.amount).toFixed(2)}</span>}
         <span style={{ marginLeft: '0.5rem', color: 'var(--text-secondary)' }}>
           {inst.kid_name || inst.claimed_by_name || 'Open'}
+          {showDate && <> &middot; {formatDate(inst.due_date)}</>}
         </span>
       </div>
       <span style={{ color: statusColors[inst.status] || 'var(--text-secondary)', fontWeight: 500, textTransform: 'capitalize' }}>
@@ -385,7 +401,7 @@ function KidChoreView() {
               <div>
                 <strong>{c.title}</strong>
                 {c.amount != null && <span className="badge badge-success" style={{ marginLeft: '0.5rem' }}>${Number(c.amount).toFixed(2)}</span>}
-                <span style={{ marginLeft: '0.5rem', color: 'var(--text-secondary)' }}>Due: {c.due_date}</span>
+                <span style={{ marginLeft: '0.5rem', color: 'var(--text-secondary)' }}>{formatDate(c.due_date)}</span>
               </div>
               <button className="btn btn-sm btn-primary" onClick={() => handleComplete(c.id)}>Mark Done</button>
             </div>
@@ -403,7 +419,7 @@ function KidChoreView() {
                 <div>
                   <strong>{c.title}</strong>
                   {c.amount != null && <span className="badge badge-success" style={{ marginLeft: '0.5rem' }}>${Number(c.amount).toFixed(2)}</span>}
-                  <span style={{ marginLeft: '0.5rem', color: 'var(--text-secondary)' }}>Due: {c.due_date}</span>
+                  <span style={{ marginLeft: '0.5rem', color: 'var(--text-secondary)' }}>{formatDate(c.due_date)}</span>
                 </div>
                 <button className="btn btn-sm btn-outline" onClick={() => handleClaim(c.id)}>Claim</button>
               </div>
@@ -421,7 +437,7 @@ function KidChoreView() {
               <div key={c.id} style={{ padding: '0.5rem 0', borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}>
                 <strong>{c.title}</strong>
                 {c.amount != null && <span style={{ marginLeft: '0.5rem' }}>${Number(c.amount).toFixed(2)}</span>}
-                <span style={{ marginLeft: '0.5rem' }}>Completed {c.completed_at?.split(' ')[0]}</span>
+                <span style={{ marginLeft: '0.5rem' }}>{formatDate(c.due_date)}</span>
               </div>
             ))}
           </div>

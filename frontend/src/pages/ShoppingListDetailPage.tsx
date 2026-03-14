@@ -179,7 +179,7 @@ export default function ShoppingListDetailPage() {
           <div className="card-body">
             {purchased.map(item => (
               <ItemRow key={item.id} item={item} onToggle={handleToggle} onDelete={handleDelete}
-                canDelete={!isKid || item.added_by_user_id === user?.id} />
+                canDelete={!isKid || item.added_by_user_id === user?.id} formatDate={formatDate} />
             ))}
           </div>
         </div>
