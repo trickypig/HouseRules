@@ -24,16 +24,23 @@ require_once __DIR__ . '/middleware/Auth.php';
 require_once __DIR__ . '/models/User.php';
 require_once __DIR__ . '/models/Kid.php';
 require_once __DIR__ . '/models/Transaction.php';
-require_once __DIR__ . '/models/AllowanceRule.php';
+require_once __DIR__ . '/models/RecurringTransaction.php';
 require_once __DIR__ . '/models/SavingsGoal.php';
+require_once __DIR__ . '/models/ChoreTemplate.php';
+require_once __DIR__ . '/models/ChoreInstance.php';
+require_once __DIR__ . '/models/ShoppingList.php';
+require_once __DIR__ . '/models/ShoppingListItem.php';
 
 // Routes
 require_once __DIR__ . '/routes/auth.php';
 require_once __DIR__ . '/routes/kids.php';
 require_once __DIR__ . '/routes/transactions.php';
-require_once __DIR__ . '/routes/allowances.php';
+require_once __DIR__ . '/routes/recurring.php';
 require_once __DIR__ . '/routes/goals.php';
 require_once __DIR__ . '/routes/dashboard.php';
+require_once __DIR__ . '/routes/kid_portal.php';
+require_once __DIR__ . '/routes/chores.php';
+require_once __DIR__ . '/routes/shopping.php';
 
 // Handle CORS
 handleCors();
@@ -52,9 +59,12 @@ $router = new Router();
 registerAuthRoutes($router, $db);
 registerKidRoutes($router, $db);
 registerTransactionRoutes($router, $db);
-registerAllowanceRoutes($router, $db);
+registerRecurringRoutes($router, $db);
 registerGoalRoutes($router, $db);
 registerDashboardRoutes($router, $db);
+registerKidPortalRoutes($router, $db);
+registerChoreRoutes($router, $db);
+registerShoppingRoutes($router, $db);
 
 // Dispatch
 $router->dispatch();

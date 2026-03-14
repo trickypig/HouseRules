@@ -460,18 +460,18 @@ img {
 .items-list {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.4rem;
 }
 
 .item-card {
   background: var(--color-bg-card);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  padding: 1rem 1.25rem;
+  padding: 0.5rem 1rem;
   box-shadow: var(--shadow-sm);
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   gap: 1rem;
   transition: box-shadow 0.2s;
 }
@@ -557,6 +557,26 @@ img {
   padding: 3rem;
 }
 
+/* ===== Side-by-side Cards ===== */
+.side-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.side-cards > .card {
+  margin-bottom: 0;
+}
+
+/* ===== Transaction Columns ===== */
+.tx-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
 /* ===== Pagination ===== */
 .admin-pagination {
   display: flex;
@@ -564,6 +584,61 @@ img {
   justify-content: center;
   gap: 1rem;
   margin-top: 1rem;
+}
+
+/* ===== Status Badges ===== */
+.status-badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  border-radius: 9999px;
+  white-space: nowrap;
+}
+
+.status-verified {
+  background: var(--color-success-light);
+  color: #2e7d32;
+}
+
+.status-pending {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.status-requested {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.status-future {
+  background: #f3e5f5;
+  color: #7b1fa2;
+}
+
+.status-cancelled {
+  background: #fafafa;
+  color: #9e9e9e;
+  text-decoration: line-through;
+}
+
+/* ===== Role Badge ===== */
+.role-badge {
+  display: inline-block;
+  padding: 0.1rem 0.4rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  border-radius: 4px;
+  margin-left: 0.4rem;
+  vertical-align: middle;
+}
+
+.role-kid {
+  background: var(--color-secondary-light);
+  color: var(--color-secondary);
 }
 
 /* ===== Responsive ===== */
@@ -598,7 +673,17 @@ img {
     width: 100%;
   }
 
+  .tx-columns {
+    grid-template-columns: 1fr;
+  }
+
   h1 {
     font-size: 1.4rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .side-cards {
+    grid-template-columns: 1fr;
   }
 }

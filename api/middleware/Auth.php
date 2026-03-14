@@ -37,6 +37,9 @@ function generateToken(array $user): string
         'email'        => $user['email'],
         'display_name' => $user['display_name'],
         'is_admin'     => (int) ($user['is_admin'] ?? 0),
+        'role'         => $user['role'] ?? 'parent',
+        'parent_id'    => $user['parent_id'] ?? null,
+        'kid_id'       => $user['kid_id'] ?? null,
         'iat'          => time(),
         'exp'          => time() + (30 * 24 * 60 * 60), // 30 days
     ]));
@@ -101,12 +104,26 @@ function authenticate(): array
         'email'        => $payload['email'],
         'display_name' => $payload['display_name'],
         'is_admin'     => (int) ($payload['is_admin'] ?? 0),
+        'role'         => $payload['role'] ?? 'parent',
+        'parent_id'    => $payload['parent_id'] ?? null,
+        'kid_id'       => $payload['kid_id'] ?? null,
     ];
 }
 
 /**
+ * Require the authenticated user to be a parent.
+ */
+function requireParent(): array
+{
+    $user = authenticate();
+    if (($user['role'] ?? 'parent') !== 'parent') {
+        Response::error('Parent access required', 403);
+    }
+    return $user;
+}
+
+/**
  * Require the authenticated user to be an admin.
- * Must be called after authenticate().
  */
 function requireAdmin(): array
 {

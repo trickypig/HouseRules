@@ -4,7 +4,7 @@ function registerTransactionRoutes(Router $router, PDO $db): void
 {
     // GET /kids/{kidId}/transactions
     $router->get('/kids/{kidId}/transactions', function (array $params) use ($db) {
-        $user = authenticate();
+        $user = requireParent();
         $kid = Kid::getById($db, (int) $params['kidId']);
 
         if (!$kid || $kid['user_id'] !== $user['id']) {
@@ -14,6 +14,7 @@ function registerTransactionRoutes(Router $router, PDO $db): void
         $filters = [
             'type'     => $_GET['type'] ?? null,
             'category' => $_GET['category'] ?? null,
+            'status'   => $_GET['status'] ?? null,
             'from'     => $_GET['from'] ?? null,
             'to'       => $_GET['to'] ?? null,
             'page'     => $_GET['page'] ?? 1,
@@ -26,7 +27,7 @@ function registerTransactionRoutes(Router $router, PDO $db): void
 
     // POST /kids/{kidId}/transactions
     $router->post('/kids/{kidId}/transactions', function (array $params) use ($db) {
-        $user = authenticate();
+        $user = requireParent();
         $body = $params['_body'];
         $kid = Kid::getById($db, (int) $params['kidId']);
 
@@ -43,6 +44,16 @@ function registerTransactionRoutes(Router $router, PDO $db): void
             Response::error('Amount must be a positive number');
         }
 
+        // Determine status: parent-entered transactions default to verified
+        // but parent can choose a different status
+        $status = $body['status'] ?? 'verified';
+        $txDate = $body['transaction_date'] ?? date('Y-m-d');
+
+        // If the date is in the future and no explicit status, set to future
+        if (!isset($body['status']) && $txDate > date('Y-m-d')) {
+            $status = 'future';
+        }
+
         try {
             $txId = Transaction::create(
                 $db,
@@ -51,7 +62,8 @@ function registerTransactionRoutes(Router $router, PDO $db): void
                 $body['category'] ?? '',
                 (float) $body['amount'],
                 $body['description'] ?? '',
-                $body['transaction_date'] ?? null
+                $txDate,
+                $status
             );
         } catch (InvalidArgumentException $e) {
             Response::error($e->getMessage());
@@ -63,7 +75,7 @@ function registerTransactionRoutes(Router $router, PDO $db): void
 
     // PUT /transactions/{id}
     $router->put('/transactions/{id}', function (array $params) use ($db) {
-        $user = authenticate();
+        $user = requireParent();
         $body = $params['_body'];
         $tx = Transaction::getById($db, (int) $params['id']);
 
@@ -85,7 +97,8 @@ function registerTransactionRoutes(Router $router, PDO $db): void
                 $body['category'] ?? $tx['category'],
                 isset($body['amount']) ? (float) $body['amount'] : (float) $tx['amount'],
                 $body['description'] ?? $tx['description'],
-                $body['transaction_date'] ?? $tx['transaction_date']
+                $body['transaction_date'] ?? $tx['transaction_date'],
+                $body['status'] ?? null
             );
         } catch (InvalidArgumentException $e) {
             Response::error($e->getMessage());
@@ -97,7 +110,7 @@ function registerTransactionRoutes(Router $router, PDO $db): void
 
     // DELETE /transactions/{id}
     $router->delete('/transactions/{id}', function (array $params) use ($db) {
-        $user = authenticate();
+        $user = requireParent();
         $tx = Transaction::getById($db, (int) $params['id']);
 
         if (!$tx) {
@@ -111,5 +124,64 @@ function registerTransactionRoutes(Router $router, PDO $db): void
 
         Transaction::delete($db, $tx['id']);
         Response::json(['message' => 'Transaction deleted']);
+    });
+
+    // POST /transactions/{id}/verify
+    $router->post('/transactions/{id}/verify', function (array $params) use ($db) {
+        $user = requireParent();
+        $tx = Transaction::getById($db, (int) $params['id']);
+
+        if (!$tx) {
+            Response::notFound('Transaction not found');
+        }
+
+        $kid = Kid::getById($db, $tx['kid_id']);
+        if (!$kid || $kid['user_id'] !== $user['id']) {
+            Response::notFound('Transaction not found');
+        }
+
+        if (!in_array($tx['status'], ['pending', 'requested'])) {
+            Response::error('Only pending or requested transactions can be verified');
+        }
+
+        Transaction::verify($db, $tx['id']);
+        $updated = Transaction::getById($db, $tx['id']);
+        Response::json(['transaction' => $updated]);
+    });
+
+    // POST /transactions/{id}/cancel
+    $router->post('/transactions/{id}/cancel', function (array $params) use ($db) {
+        $user = requireParent();
+        $tx = Transaction::getById($db, (int) $params['id']);
+
+        if (!$tx) {
+            Response::notFound('Transaction not found');
+        }
+
+        $kid = Kid::getById($db, $tx['kid_id']);
+        if (!$kid || $kid['user_id'] !== $user['id']) {
+            Response::notFound('Transaction not found');
+        }
+
+        if (!in_array($tx['status'], ['pending', 'requested', 'future'])) {
+            Response::error('This transaction cannot be cancelled');
+        }
+
+        Transaction::cancel($db, $tx['id']);
+        $updated = Transaction::getById($db, $tx['id']);
+        Response::json(['transaction' => $updated]);
+    });
+
+    // POST /kids/{kidId}/transactions/verify-all
+    $router->post('/kids/{kidId}/transactions/verify-all', function (array $params) use ($db) {
+        $user = requireParent();
+        $kid = Kid::getById($db, (int) $params['kidId']);
+
+        if (!$kid || $kid['user_id'] !== $user['id']) {
+            Response::notFound('Kid not found');
+        }
+
+        $count = Transaction::verifyAllPending($db, $kid['id']);
+        Response::json(['verified' => $count]);
     });
 }

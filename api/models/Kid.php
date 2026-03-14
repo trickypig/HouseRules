@@ -54,11 +54,14 @@ class Kid
         $stmt->execute(['id' => $id]);
     }
 
+    /**
+     * Calculate balance from verified + pending transactions only.
+     */
     public static function getBalance(PDO $db, int $kidId): float
     {
         $stmt = $db->prepare(
             "SELECT COALESCE(SUM(CASE WHEN type = 'credit' THEN amount ELSE -amount END), 0) as balance
-             FROM transactions WHERE kid_id = :kid_id"
+             FROM transactions WHERE kid_id = :kid_id AND status IN ('verified', 'pending')"
         );
         $stmt->execute(['kid_id' => $kidId]);
         return (float) $stmt->fetchColumn();
