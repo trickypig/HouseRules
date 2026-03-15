@@ -5,6 +5,7 @@ function registerHouseholdRoutes(Router $router, PDO $db): void
     // GET /household — current household info + members
     $router->get('/household', function (array $params) use ($db) {
         $user = requireParent();
+
         $household = Household::getById($db, $user['household_id']);
 
         if (!$household) {

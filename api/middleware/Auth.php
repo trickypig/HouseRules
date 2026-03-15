@@ -122,7 +122,7 @@ function authenticate(): array
         Response::unauthorized('Token expired');
     }
 
-    return [
+    $user = [
         'id'           => $payload['sub'],
         'email'        => $payload['email'],
         'display_name' => $payload['display_name'],
@@ -132,6 +132,48 @@ function authenticate(): array
         'kid_id'       => $payload['kid_id'] ?? null,
         'household_id' => $payload['household_id'] ?? null,
     ];
+
+    // Auto-create household for parents who don't have one (stale JWT or pre-migration user)
+    if (($user['role'] === 'parent') && empty($user['household_id'])) {
+        $user = ensureHousehold($user);
+    }
+
+    return $user;
+}
+
+/**
+ * Ensure the authenticated user has a household, creating one if needed.
+ * Called automatically by authenticate() for parent users.
+ */
+function ensureHousehold(array $user): array
+{
+    if (!empty($user['household_id'])) {
+        return $user;
+    }
+
+    global $db;
+    if (!$db) {
+        return $user;
+    }
+
+    // Look up the real user record — the JWT may be stale
+    $dbUser = User::findById($db, $user['id']);
+    if ($dbUser && !empty($dbUser['household_id'])) {
+        $user['household_id'] = $dbUser['household_id'];
+        return $user;
+    }
+
+    // Create a household for this parent
+    $householdId = Household::create($db, ($user['display_name'] ?? 'My') . "'s Family");
+    $db->prepare('UPDATE users SET household_id = :hid, updated_at = :now WHERE id = :id')
+        ->execute(['hid' => $householdId, 'now' => date('Y-m-d H:i:s'), 'id' => $user['id']]);
+
+    // Also assign any orphaned kids created by this user
+    $db->prepare('UPDATE kids SET household_id = :hid WHERE user_id = :uid AND household_id IS NULL')
+        ->execute(['hid' => $householdId, 'uid' => $user['id']]);
+
+    $user['household_id'] = $householdId;
+    return $user;
 }
 
 /**
