@@ -181,7 +181,7 @@ export default function DashboardPage() {
       {/* Kid Cards */}
       {kids.length === 0 ? (
         <div className="empty-state">
-          <p>No kids added yet. Go to <Link to="/money">Money</Link> to add kids.</p>
+          <p>No kids added yet. Go to <Link to="/settings">Settings</Link> to add kids.</p>
         </div>
       ) : (
         <div className="list-grid" style={{ marginBottom: '1.5rem' }}>

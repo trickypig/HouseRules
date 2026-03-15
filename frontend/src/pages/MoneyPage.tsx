@@ -77,7 +77,7 @@ export default function MoneyPage() {
 
       {kids.length === 0 ? (
         <div className="empty-state">
-          <p>No kids added yet. Click "Add Kid" to get started!</p>
+          <p>No kids added yet. Go to <Link to="/settings">Settings</Link> to add kids.</p>
         </div>
       ) : (
         <>
