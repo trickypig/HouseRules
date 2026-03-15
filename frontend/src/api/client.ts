@@ -1,6 +1,6 @@
 import type { User, Kid, Transaction, RecurringTransaction, SavingsGoal, GoalProjection, Pagination, KidUser, ChoreTemplate, ChoreInstance, ShoppingList, ShoppingListItem } from '../types';
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+const BASE_URL = import.meta.env.DEV ? 'http://localhost:8080' : '';
 
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
   const headers: Record<string, string> = {
@@ -10,6 +10,7 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   const token = localStorage.getItem('token');
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
+    headers['X-Auth-Token'] = token;
   }
 
   const res = await fetch(`${BASE_URL}/api${path}`, {
