@@ -75,6 +75,26 @@ $db->exec("CREATE TABLE IF NOT EXISTS kids (
 )");
 echo "  [OK] kids\n";
 
+// ---- recurring_transactions ----
+$db->exec("CREATE TABLE IF NOT EXISTS recurring_transactions (
+    id {$autoIncrement},
+    kid_id INTEGER NOT NULL,
+    type VARCHAR(20) NOT NULL,
+    category VARCHAR(50) NOT NULL DEFAULT '',
+    amount DECIMAL(10,2) NOT NULL,
+    description VARCHAR(255) NOT NULL DEFAULT '',
+    frequency VARCHAR(20) NOT NULL,
+    day_of_week INTEGER,
+    day_of_month INTEGER,
+    start_date {$timestampType} NOT NULL,
+    end_date {$timestampType},
+    is_active INTEGER NOT NULL DEFAULT 1,
+    created_at {$timestampType} NOT NULL,
+    updated_at {$timestampType} NOT NULL,
+    FOREIGN KEY (kid_id) REFERENCES kids(id) ON DELETE CASCADE
+)");
+echo "  [OK] recurring_transactions\n";
+
 // ---- transactions ----
 $db->exec("CREATE TABLE IF NOT EXISTS transactions (
     id {$autoIncrement},
@@ -95,26 +115,6 @@ echo "  [OK] transactions\n";
 // Add new columns to existing transactions table
 addColumn($db, 'transactions', 'status', "VARCHAR(20) NOT NULL DEFAULT 'verified'");
 addColumn($db, 'transactions', 'recurring_transaction_id', 'INTEGER');
-
-// ---- recurring_transactions ----
-$db->exec("CREATE TABLE IF NOT EXISTS recurring_transactions (
-    id {$autoIncrement},
-    kid_id INTEGER NOT NULL,
-    type VARCHAR(20) NOT NULL,
-    category VARCHAR(50) NOT NULL DEFAULT '',
-    amount DECIMAL(10,2) NOT NULL,
-    description VARCHAR(255) NOT NULL DEFAULT '',
-    frequency VARCHAR(20) NOT NULL,
-    day_of_week INTEGER,
-    day_of_month INTEGER,
-    start_date {$timestampType} NOT NULL,
-    end_date {$timestampType},
-    is_active INTEGER NOT NULL DEFAULT 1,
-    created_at {$timestampType} NOT NULL,
-    updated_at {$timestampType} NOT NULL,
-    FOREIGN KEY (kid_id) REFERENCES kids(id) ON DELETE CASCADE
-)");
-echo "  [OK] recurring_transactions\n";
 
 // ---- allowance_rules (legacy, kept for data preservation) ----
 $db->exec("CREATE TABLE IF NOT EXISTS allowance_rules (
