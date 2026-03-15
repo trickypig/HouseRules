@@ -2,6 +2,8 @@ import { useState, useEffect, type FormEvent } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import type { Kid, Transaction, RecurringTransaction, SavingsGoal, GoalProjection, Pagination, KidUser } from '../types';
 import * as api from '../api/client';
+import GoalCard from '../components/GoalCard';
+import BalanceChart from '../components/BalanceChart';
 
 export default function KidDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -15,6 +17,7 @@ export default function KidDetailPage() {
   const [futureTransactions, setFutureTransactions] = useState<Transaction[]>([]);
   const [recurring, setRecurring] = useState<RecurringTransaction[]>([]);
   const [goals, setGoals] = useState<SavingsGoal[]>([]);
+  const [weeklyData, setWeeklyData] = useState<{ week_end: string; credits: number; debits: number; balance: number }[]>([]);
   const [kidUser, setKidUser] = useState<KidUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -51,10 +54,6 @@ export default function KidDetailPage() {
   const [goalTarget, setGoalTarget] = useState('');
   const [goalWantBy, setGoalWantBy] = useState('');
   const [projections, setProjections] = useState<GoalProjection[]>([]);
-  const [editingGoalId, setEditingGoalId] = useState<number | null>(null);
-  const [editGoalName, setEditGoalName] = useState('');
-  const [editGoalTarget, setEditGoalTarget] = useState('');
-  const [editGoalWantBy, setEditGoalWantBy] = useState('');
 
 
   // Kid login form
@@ -70,7 +69,7 @@ export default function KidDetailPage() {
     try {
       const today = new Date().toISOString().split('T')[0];
       const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
-      const [kidRes, pastTxRes, futureTxRes, recRes, goalsRes, projectionsRes, kidUsersRes] = await Promise.all([
+      const [kidRes, pastTxRes, futureTxRes, recRes, goalsRes, projectionsRes, kidUsersRes, weeklyRes] = await Promise.all([
         api.getKid(kidId),
         api.getTransactions(kidId, { to: today }),
         api.getTransactions(kidId, { from: tomorrow, per_page: 100 }),
@@ -78,6 +77,7 @@ export default function KidDetailPage() {
         api.getGoals(kidId),
         api.getGoalProjections(kidId),
         api.getKidUsers(),
+        api.getWeeklySummary(kidId),
       ]);
       setKid(kidRes.kid);
       setPastTransactions(pastTxRes.transactions);
@@ -87,6 +87,7 @@ export default function KidDetailPage() {
       setRecurring(recRes.recurring);
       setGoals(goalsRes.goals);
       setProjections(projectionsRes.projections);
+      setWeeklyData(weeklyRes.weeks);
       setEditName(kidRes.kid.name);
       setEditColor(kidRes.kid.color);
       setEditAvatar(kidRes.kid.avatar);
@@ -230,7 +231,7 @@ export default function KidDetailPage() {
     setRecFrequency(rec.frequency);
     setRecDayOfWeek(rec.day_of_week !== null ? String(rec.day_of_week) : '0');
     setRecDayOfMonth(rec.day_of_month !== null ? String(rec.day_of_month) : '1');
-    setRecStartDate(rec.start_date);
+    setRecStartDate(rec.start_date.slice(0, 10));
   }
 
   async function handleEditRecurring(e: FormEvent) {
@@ -281,27 +282,13 @@ export default function KidDetailPage() {
     }
   }
 
-  async function handleEditGoal(e: FormEvent) {
-    e.preventDefault();
-    if (!editingGoalId) return;
+  async function handleEditGoal(id: number, data: { name: string; target_amount: number | null; want_by_date: string | null }) {
     try {
-      await api.updateGoal(editingGoalId, {
-        name: editGoalName,
-        target_amount: editGoalTarget ? parseFloat(editGoalTarget) : null,
-        want_by_date: editGoalWantBy || null,
-      });
-      setEditingGoalId(null);
+      await api.updateGoal(id, data);
       loadData();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to update goal');
     }
-  }
-
-  function startEditGoal(goal: SavingsGoal) {
-    setEditingGoalId(goal.id);
-    setEditGoalName(goal.name);
-    setEditGoalTarget(goal.target_amount ? String(goal.target_amount) : '');
-    setEditGoalWantBy(goal.want_by_date ?? '');
   }
 
   async function handleMoveGoal(goalId: number, direction: -1 | 1) {
@@ -365,7 +352,7 @@ export default function KidDetailPage() {
   }
 
   function formatDate(dateStr: string): string {
-    const d = new Date(dateStr + 'T00:00:00');
+    const d = new Date(dateStr.slice(0, 10) + 'T00:00:00');
     const currentYear = new Date().getFullYear();
     const opts: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
     if (d.getFullYear() !== currentYear) opts.year = 'numeric';
@@ -762,88 +749,72 @@ export default function KidDetailPage() {
           <p className="text-muted">No savings goals yet.</p>
         ) : (
           <div className="items-list">
-            {goals.map((goal) => {
-              const progress = goal.target_amount ? Math.min(100, (Number(goal.current_amount) / Number(goal.target_amount)) * 100) : null;
-              const proj = projections.find(p => p.goal_id === goal.id);
+            {goals.map(goal => {
               const incompleteGoals = goals.filter(g => !g.is_completed);
-              const incompleteIdx = incompleteGoals.findIndex(g => g.id === goal.id);
               return (
-                <div key={goal.id} className="item-card" style={{ flexDirection: 'column', gap: '0.25rem' }}>
-                  {editingGoalId === goal.id ? (
-                    <form onSubmit={handleEditGoal} style={{ width: '100%' }}>
-                      <div className="form-row">
-                        <div className="form-group form-group-grow">
-                          <input type="text" value={editGoalName} onChange={e => setEditGoalName(e.target.value)} required />
-                        </div>
-                        <div className="form-group">
-                          <input type="number" step="0.01" min="0" value={editGoalTarget} onChange={e => setEditGoalTarget(e.target.value)} placeholder="Target" />
-                        </div>
-                        <div className="form-group">
-                          <input type="date" value={editGoalWantBy} onChange={e => setEditGoalWantBy(e.target.value)} />
-                        </div>
-                      </div>
-                      <div className="form-actions">
-                        <button type="submit" className="btn btn-sm btn-primary">Save</button>
-                        <button type="button" className="btn btn-sm btn-ghost" onClick={() => setEditingGoalId(null)}>Cancel</button>
-                      </div>
-                    </form>
-                  ) : (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', cursor: 'pointer' }} onClick={() => startEditGoal(goal)}>
-                      <div className="item-details">
-                        <div className="item-header">
-                          {!goal.is_completed && <span style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', fontWeight: 600 }}>#{incompleteIdx + 1}</span>}
-                          <span className="item-name">{goal.name}</span>
-                          {goal.is_completed ? <span className="status-badge status-verified">Completed</span> : null}
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-                          <span style={{ fontWeight: 600 }}>{formatCurrency(Number(goal.current_amount))}</span>
-                          {goal.target_amount && <span className="text-muted">of {formatCurrency(Number(goal.target_amount))}</span>}
-                          {progress !== null && (
-                            <div className="purchase-progress">
-                              <div className="purchase-bar" style={{ width: '100px' }}>
-                                <div className="purchase-bar-fill" style={{ width: `${progress}%` }} />
-                              </div>
-                              <span className="purchase-text">{progress.toFixed(0)}%</span>
-                            </div>
-                          )}
-                        </div>
-                        {proj && !goal.is_completed && goal.target_amount && (
-                          <div style={{ fontSize: '0.8rem', marginTop: '0.15rem' }}>
-                            {proj.expected_date ? (
-                              <div style={{ color: proj.on_track ? 'var(--color-success)' : 'var(--color-danger)' }}>
-                                Expected: {formatDate(proj.expected_date)}
-                              </div>
-                            ) : (
-                              <div className="text-muted">No recurring income to project</div>
-                            )}
-                            {(goal.want_by_date || (proj.expected_date && !proj.on_track)) && (
-                              <div style={{ color: 'var(--color-text-muted)' }}>
-                                {goal.want_by_date && <>Want by {formatDate(goal.want_by_date)}</>}
-                                {goal.want_by_date && !proj.on_track && proj.expected_date && <> &middot; </>}
-                                {!proj.on_track && proj.expected_date && <span style={{ color: 'var(--color-danger)' }}>Need {formatCurrency(proj.shortfall)} extra</span>}
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                      <div className="item-actions" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0' }} onClick={e => e.stopPropagation()}>
-                        {!goal.is_completed && (
-                          <button onClick={() => handleMoveGoal(goal.id, -1)} className="btn btn-sm btn-ghost" disabled={incompleteIdx === 0} title="Move up" style={{ padding: '0.1rem 0.4rem' }}>&uarr;</button>
-                        )}
-                        <button onClick={() => handleDeleteGoal(goal.id)} className="btn btn-sm btn-ghost" title="Delete" style={{ padding: '0.1rem 0.4rem', color: 'var(--color-danger)' }}>&times;</button>
-                        {!goal.is_completed && (
-                          <button onClick={() => handleMoveGoal(goal.id, 1)} className="btn btn-sm btn-ghost" disabled={incompleteIdx === incompleteGoals.length - 1} title="Move down" style={{ padding: '0.1rem 0.4rem' }}>&darr;</button>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
+                <GoalCard
+                  key={goal.id}
+                  goal={goal}
+                  projection={projections.find(p => p.goal_id === goal.id)}
+                  incompleteIndex={incompleteGoals.findIndex(g => g.id === goal.id)}
+                  incompleteCount={incompleteGoals.length}
+                  formatCurrency={formatCurrency}
+                  formatDate={formatDate}
+                  onEdit={handleEditGoal}
+                  onDelete={handleDeleteGoal}
+                  onMove={handleMoveGoal}
+                />
               );
             })}
           </div>
         )}
       </div>
       </div>
+
+      {/* Balance Chart */}
+      {weeklyData.length >= 2 && (
+        <div className="card" style={{ marginBottom: '1.5rem' }}>
+          <h3 style={{ marginBottom: '0.5rem' }}>Balance Over Time</h3>
+          <BalanceChart
+            data={weeklyData}
+            color={kid?.color ?? '#4A90D9'}
+            futureData={(() => {
+              // Bucket future transactions into weeks and project balance forward
+              if (!futureTransactions.length) return undefined;
+              const lastBalance = weeklyData[weeklyData.length - 1]?.balance ?? (kid?.balance ?? 0);
+              const now = new Date();
+              const cutoff = new Date(now.getFullYear(), now.getMonth() + 1, now.getDate());
+              const sorted = [...futureTransactions].reverse();
+              // Group by week-ending Sunday
+              const weekMap = new Map<string, { credits: number; debits: number }>();
+              for (const tx of sorted) {
+                const txDate = new Date(tx.transaction_date.slice(0, 10) + 'T00:00:00');
+                if (txDate > cutoff) continue;
+                // Find week-ending Sunday
+                const day = txDate.getDay();
+                const sun = new Date(txDate);
+                sun.setDate(sun.getDate() + (7 - day) % 7);
+                const weekEnd = sun.toISOString().split('T')[0];
+                const entry = weekMap.get(weekEnd) ?? { credits: 0, debits: 0 };
+                const amt = Number(tx.amount);
+                if (tx.type === 'credit') entry.credits += amt;
+                else entry.debits += amt;
+                weekMap.set(weekEnd, entry);
+              }
+              if (weekMap.size === 0) return undefined;
+              const weeks = [...weekMap.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+              let bal = lastBalance;
+              return weeks.map(([weekEnd, { credits, debits }]) => {
+                bal += credits - debits;
+                return { week_end: weekEnd, credits, debits, balance: bal };
+              });
+            })()}
+            goals={goals
+              .filter(g => g.target_amount && !g.is_completed)
+              .map(g => ({ name: g.name, target_amount: g.target_amount! }))}
+          />
+        </div>
+      )}
 
       {/* Transactions Header + Add Form */}
       <div className="section-header">
@@ -943,8 +914,8 @@ export default function KidDetailPage() {
                               <button onClick={() => handleCancel(tx.id)} className="btn btn-sm btn-ghost" title="Cancel">&#10005;</button>
                             </>
                           )}
-                          {!tx.recurring_transaction_id && (
-                            <button onClick={() => handleDeleteTransaction(tx.id)} className="btn btn-sm btn-ghost">x</button>
+                          {tx.status !== 'pending' && tx.status !== 'requested' && (
+                            <button onClick={() => handleDeleteTransaction(tx.id)} className="btn btn-sm btn-ghost" title="Delete">&#10005;</button>
                           )}
                         </div>
                       </div>
@@ -1001,10 +972,7 @@ export default function KidDetailPage() {
                               }}>
                                 {tx.type === 'credit' ? '+' : '-'}{formatCurrency(Number(tx.amount))}
                               </span>
-                              <button onClick={() => handleCancel(tx.id)} className="btn btn-sm btn-ghost" title="Cancel">&#10005;</button>
-                              {!tx.recurring_transaction_id && (
-                                <button onClick={() => handleDeleteTransaction(tx.id)} className="btn btn-sm btn-ghost">x</button>
-                              )}
+                              <button onClick={() => handleDeleteTransaction(tx.id)} className="btn btn-sm btn-ghost" title="Delete">&#10005;</button>
                             </div>
                           </div>
                         ))}

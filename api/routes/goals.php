@@ -105,18 +105,15 @@ function registerGoalRoutes(Router $router, PDO $db): void
     });
 
     // DELETE /goals/{id}
-    $router->delete('/goals/{id}', function (array $params) use ($db) {
-        $user = requireParent();
+    $router->delete('/goals/{id}', function (array $params) use ($db, $checkKidAccess) {
+        $user = authenticate();
         $goal = SavingsGoal::getById($db, (int) $params['id']);
 
         if (!$goal) {
             Response::notFound('Goal not found');
         }
 
-        $kid = Kid::getById($db, $goal['kid_id']);
-        if (!$kid || $kid['household_id'] != $user['household_id']) {
-            Response::notFound('Goal not found');
-        }
+        $checkKidAccess($db, $user, $goal['kid_id']);
 
         SavingsGoal::delete($db, $goal['id']);
         Response::json(['message' => 'Goal deleted']);

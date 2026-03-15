@@ -225,4 +225,63 @@ class Transaction
         $stmt->execute($params);
         return $stmt->fetchAll();
     }
+
+    /**
+     * Get weekly balance summary for charting.
+     * Returns week-ending dates with credits, debits, and running balance.
+     */
+    public static function getWeeklySummary(PDO $db, int $kidId, int $weeks = 26): array
+    {
+        $isSqlite = $db->getAttribute(PDO::ATTR_DRIVER_NAME) === 'sqlite';
+
+        // Week-end grouping: use end-of-week (Sunday)
+        if ($isSqlite) {
+            $weekExpr = "date(transaction_date, 'weekday 0')";
+        } else {
+            // MySQL: shift to Sunday end-of-week
+            $weekExpr = "DATE_ADD(transaction_date, INTERVAL (7 - DAYOFWEEK(transaction_date)) DAY)";
+        }
+
+        $startDate = date('Y-m-d', strtotime("-{$weeks} weeks"));
+
+        $stmt = $db->prepare(
+            "SELECT
+                {$weekExpr} as week_end,
+                COALESCE(SUM(CASE WHEN type = 'credit' THEN amount ELSE 0 END), 0) as credits,
+                COALESCE(SUM(CASE WHEN type = 'debit' THEN amount ELSE 0 END), 0) as debits
+             FROM transactions
+             WHERE kid_id = :kid_id
+               AND status IN ('verified', 'pending')
+               AND transaction_date >= :start_date
+               AND transaction_date <= CURRENT_DATE
+             GROUP BY {$weekExpr}
+             ORDER BY week_end ASC"
+        );
+        $stmt->execute(['kid_id' => $kidId, 'start_date' => $startDate]);
+        $rows = $stmt->fetchAll();
+
+        // Get balance as of start_date (everything before)
+        $balStmt = $db->prepare(
+            "SELECT COALESCE(SUM(CASE WHEN type = 'credit' THEN amount ELSE -amount END), 0)
+             FROM transactions
+             WHERE kid_id = :kid_id AND status IN ('verified', 'pending') AND transaction_date < :start_date"
+        );
+        $balStmt->execute(['kid_id' => $kidId, 'start_date' => $startDate]);
+        $runningBalance = (float) $balStmt->fetchColumn();
+
+        $result = [];
+        foreach ($rows as $row) {
+            $credits = (float) $row['credits'];
+            $debits = (float) $row['debits'];
+            $runningBalance += $credits - $debits;
+            $result[] = [
+                'week_end' => substr($row['week_end'], 0, 10),
+                'credits'  => $credits,
+                'debits'   => $debits,
+                'balance'  => $runningBalance,
+            ];
+        }
+
+        return $result;
+    }
 }

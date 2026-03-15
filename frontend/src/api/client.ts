@@ -130,6 +130,11 @@ export function getTransactions(kidId: number, params?: { type?: string; categor
   return apiClient.get<{ transactions: Transaction[]; date_balances: Record<string, number>; pagination: Pagination }>(`/kids/${kidId}/transactions${qs ? '?' + qs : ''}`);
 }
 
+export function getWeeklySummary(kidId: number, weeks?: number) {
+  const qs = weeks ? `?weeks=${weeks}` : '';
+  return apiClient.get<{ weeks: { week_end: string; credits: number; debits: number; balance: number }[] }>(`/kids/${kidId}/weekly-summary${qs}`);
+}
+
 export function createTransaction(kidId: number, data: { type: string; category?: string; amount: number; description?: string; transaction_date?: string; status?: string }) {
   return apiClient.post<{ transaction: Transaction }>(`/kids/${kidId}/transactions`, data);
 }

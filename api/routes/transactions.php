@@ -25,6 +25,21 @@ function registerTransactionRoutes(Router $router, PDO $db): void
         Response::json($result);
     });
 
+    // GET /kids/{kidId}/weekly-summary
+    $router->get('/kids/{kidId}/weekly-summary', function (array $params) use ($db) {
+        $user = authenticate();
+        $kid = Kid::getById($db, (int) $params['kidId']);
+
+        if (!$kid || $kid['household_id'] != $user['household_id']) {
+            Response::notFound('Kid not found');
+        }
+
+        $weeks = isset($_GET['weeks']) ? min((int) $_GET['weeks'], 104) : 26;
+        $summary = Transaction::getWeeklySummary($db, $kid['id'], $weeks);
+
+        Response::json(['weeks' => $summary]);
+    });
+
     // POST /kids/{kidId}/transactions
     $router->post('/kids/{kidId}/transactions', function (array $params) use ($db) {
         $user = requireParent();

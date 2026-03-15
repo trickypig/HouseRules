@@ -98,7 +98,7 @@ export default function ShoppingListDetailPage() {
   if (!list) return <div className="alert alert-error">List not found</div>;
 
   function formatDate(dateStr: string): string {
-    const d = new Date(dateStr);
+    const d = new Date(dateStr.replace(' ', 'T'));
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   }
 
