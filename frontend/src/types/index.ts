@@ -2,10 +2,28 @@ export interface User {
   id: number;
   email: string;
   display_name: string;
+  family_display_name: string;
   is_admin: number;
   role: 'parent' | 'kid';
   parent_id: number | null;
   kid_id: number | null;
+  household_id: number | null;
+}
+
+export interface Household {
+  id: number;
+  name: string;
+  invite_code: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface HouseholdMember {
+  id: number;
+  email: string;
+  display_name: string;
+  family_display_name: string;
+  role: string;
 }
 
 export interface Kid {

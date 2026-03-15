@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 export default function Header() {
-  const { isAuthenticated, user, isKid, logout } = useAuth();
+  const { isAuthenticated, user, isKid } = useAuth();
 
   return (
     <header className="app-header">
@@ -14,18 +14,14 @@ export default function Header() {
         <nav className="header-nav">
           {isAuthenticated ? (
             <>
-              <Link to="/dashboard" className="nav-link">
-                {isKid ? 'My Dashboard' : 'Dashboard'}
-              </Link>
               <Link to="/money" className="nav-link">Money</Link>
               <Link to="/chores" className="nav-link">Chores</Link>
-              <Link to="/shopping" className="nav-link">Lists</Link>
+              <Link to="/shopping" className="nav-link">Shopping</Link>
               <div className="header-user">
-                <span className="user-name">
+                <Link to="/settings" className="user-name-link">
                   {user?.display_name}
                   {isKid && <span className="role-badge role-kid">Kid</span>}
-                </span>
-                <button onClick={logout} className="btn btn-sm btn-outline">Logout</button>
+                </Link>
               </div>
             </>
           ) : (

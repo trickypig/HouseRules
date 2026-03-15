@@ -7,7 +7,7 @@ function registerTransactionRoutes(Router $router, PDO $db): void
         $user = requireParent();
         $kid = Kid::getById($db, (int) $params['kidId']);
 
-        if (!$kid || $kid['user_id'] !== $user['id']) {
+        if (!$kid || $kid['household_id'] != $user['household_id']) {
             Response::notFound('Kid not found');
         }
 
@@ -31,7 +31,7 @@ function registerTransactionRoutes(Router $router, PDO $db): void
         $body = $params['_body'];
         $kid = Kid::getById($db, (int) $params['kidId']);
 
-        if (!$kid || $kid['user_id'] !== $user['id']) {
+        if (!$kid || $kid['household_id'] != $user['household_id']) {
             Response::notFound('Kid not found');
         }
 
@@ -44,12 +44,9 @@ function registerTransactionRoutes(Router $router, PDO $db): void
             Response::error('Amount must be a positive number');
         }
 
-        // Determine status: parent-entered transactions default to verified
-        // but parent can choose a different status
         $status = $body['status'] ?? 'verified';
         $txDate = $body['transaction_date'] ?? date('Y-m-d');
 
-        // If the date is in the future and no explicit status, set to future
         if (!isset($body['status']) && $txDate > date('Y-m-d')) {
             $status = 'future';
         }
@@ -83,9 +80,8 @@ function registerTransactionRoutes(Router $router, PDO $db): void
             Response::notFound('Transaction not found');
         }
 
-        // Verify ownership
         $kid = Kid::getById($db, $tx['kid_id']);
-        if (!$kid || $kid['user_id'] !== $user['id']) {
+        if (!$kid || $kid['household_id'] != $user['household_id']) {
             Response::notFound('Transaction not found');
         }
 
@@ -118,7 +114,7 @@ function registerTransactionRoutes(Router $router, PDO $db): void
         }
 
         $kid = Kid::getById($db, $tx['kid_id']);
-        if (!$kid || $kid['user_id'] !== $user['id']) {
+        if (!$kid || $kid['household_id'] != $user['household_id']) {
             Response::notFound('Transaction not found');
         }
 
@@ -136,7 +132,7 @@ function registerTransactionRoutes(Router $router, PDO $db): void
         }
 
         $kid = Kid::getById($db, $tx['kid_id']);
-        if (!$kid || $kid['user_id'] !== $user['id']) {
+        if (!$kid || $kid['household_id'] != $user['household_id']) {
             Response::notFound('Transaction not found');
         }
 
@@ -159,7 +155,7 @@ function registerTransactionRoutes(Router $router, PDO $db): void
         }
 
         $kid = Kid::getById($db, $tx['kid_id']);
-        if (!$kid || $kid['user_id'] !== $user['id']) {
+        if (!$kid || $kid['household_id'] != $user['household_id']) {
             Response::notFound('Transaction not found');
         }
 
@@ -177,7 +173,7 @@ function registerTransactionRoutes(Router $router, PDO $db): void
         $user = requireParent();
         $kid = Kid::getById($db, (int) $params['kidId']);
 
-        if (!$kid || $kid['user_id'] !== $user['id']) {
+        if (!$kid || $kid['household_id'] != $user['household_id']) {
             Response::notFound('Kid not found');
         }
 

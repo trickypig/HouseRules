@@ -2,6 +2,49 @@
 
 class ChoreInstance
 {
+    public static function getByHousehold(PDO $db, int $householdId, array $filters = []): array
+    {
+        $where = [
+            '(k.household_id = :hid OR (ci.kid_id IS NULL AND ct.household_id = :hid2))'
+        ];
+        $params = ['hid' => $householdId, 'hid2' => $householdId];
+
+        if (!empty($filters['status'])) {
+            $where[] = 'ci.status = :status';
+            $params['status'] = $filters['status'];
+        }
+
+        if (!empty($filters['kid_id'])) {
+            $where[] = '(ci.kid_id = :kid_id OR ci.claimed_by_kid_id = :kid_id2)';
+            $params['kid_id'] = $filters['kid_id'];
+            $params['kid_id2'] = $filters['kid_id'];
+        }
+
+        if (!empty($filters['from'])) {
+            $where[] = 'ci.due_date >= :from_date';
+            $params['from_date'] = $filters['from'];
+        }
+
+        if (!empty($filters['to'])) {
+            $where[] = 'ci.due_date <= :to_date';
+            $params['to_date'] = $filters['to'];
+        }
+
+        $whereSql = implode(' AND ', $where);
+
+        $stmt = $db->prepare(
+            "SELECT ci.*, k.name as kid_name, ck.name as claimed_by_name
+             FROM chore_instances ci
+             LEFT JOIN kids k ON k.id = ci.kid_id
+             LEFT JOIN kids ck ON ck.id = ci.claimed_by_kid_id
+             LEFT JOIN chore_templates ct ON ct.id = ci.chore_template_id
+             WHERE {$whereSql}
+             ORDER BY ci.due_date ASC, ci.id ASC"
+        );
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
+
     public static function getByUser(PDO $db, int $userId, array $filters = []): array
     {
         $where = [
@@ -69,17 +112,17 @@ class ChoreInstance
         return $stmt->fetchAll();
     }
 
-    public static function getOpenChores(PDO $db, int $userId): array
+    public static function getOpenChores(PDO $db, int $householdId): array
     {
         $stmt = $db->prepare(
             "SELECT ci.* FROM chore_instances ci
              JOIN chore_templates ct ON ct.id = ci.chore_template_id
-             WHERE ct.user_id = :user_id
+             WHERE ct.household_id = :household_id
              AND ci.kid_id IS NULL AND ci.claimed_by_kid_id IS NULL
              AND ci.status = 'pending'
              ORDER BY ci.due_date ASC"
         );
-        $stmt->execute(['user_id' => $userId]);
+        $stmt->execute(['household_id' => $householdId]);
         return $stmt->fetchAll();
     }
 

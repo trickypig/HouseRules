@@ -2,6 +2,43 @@
 
 class ShoppingList
 {
+    public static function getByHousehold(PDO $db, int $householdId): array
+    {
+        $stmt = $db->prepare(
+            'SELECT sl.*,
+                    COUNT(sli.id) as item_count,
+                    SUM(CASE WHEN sli.is_purchased = 0 THEN 1 ELSE 0 END) as unpurchased_count
+             FROM shopping_lists sl
+             LEFT JOIN shopping_list_items sli ON sli.list_id = sl.id
+             WHERE sl.household_id = :household_id
+             GROUP BY sl.id
+             ORDER BY sl.sort_order ASC, sl.created_at ASC'
+        );
+        $stmt->execute(['household_id' => $householdId]);
+        $lists = $stmt->fetchAll();
+
+        foreach ($lists as &$list) {
+            $itemStmt = $db->prepare(
+                'SELECT description, is_purchased FROM shopping_list_items
+                 WHERE list_id = :list_id ORDER BY is_purchased ASC, created_at DESC'
+            );
+            $itemStmt->execute(['list_id' => $list['id']]);
+            $items = $itemStmt->fetchAll();
+
+            $list['unpurchased_items'] = [];
+            $list['purchased_items'] = [];
+            foreach ($items as $item) {
+                if ($item['is_purchased']) {
+                    $list['purchased_items'][] = $item['description'];
+                } else {
+                    $list['unpurchased_items'][] = $item['description'];
+                }
+            }
+        }
+
+        return $lists;
+    }
+
     public static function getByUser(PDO $db, int $userId): array
     {
         $stmt = $db->prepare(
@@ -47,18 +84,19 @@ class ShoppingList
         return $stmt->fetch();
     }
 
-    public static function create(PDO $db, int $userId, string $name): int
+    public static function create(PDO $db, int $userId, string $name, ?int $householdId = null): int
     {
         $stmt = $db->prepare(
-            'INSERT INTO shopping_lists (user_id, name, sort_order, created_at, updated_at)
-             VALUES (:user_id, :name, 0, :created_at, :updated_at)'
+            'INSERT INTO shopping_lists (user_id, name, household_id, sort_order, created_at, updated_at)
+             VALUES (:user_id, :name, :household_id, 0, :created_at, :updated_at)'
         );
         $now = date('Y-m-d H:i:s');
         $stmt->execute([
-            'user_id'    => $userId,
-            'name'       => $name,
-            'created_at' => $now,
-            'updated_at' => $now,
+            'user_id'      => $userId,
+            'name'         => $name,
+            'household_id' => $householdId,
+            'created_at'   => $now,
+            'updated_at'   => $now,
         ]);
         return (int) $db->lastInsertId();
     }

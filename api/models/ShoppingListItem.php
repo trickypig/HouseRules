@@ -97,18 +97,18 @@ class ShoppingListItem
         $stmt->execute(['id' => $id]);
     }
 
-    public static function autocomplete(PDO $db, int $userId, string $query): array
+    public static function autocomplete(PDO $db, int $householdId, string $query): array
     {
         $stmt = $db->prepare(
             "SELECT DISTINCT sli.description
              FROM shopping_list_items sli
              JOIN shopping_lists sl ON sl.id = sli.list_id
-             WHERE sl.user_id = :user_id AND sli.description LIKE :query
+             WHERE sl.household_id = :household_id AND sli.description LIKE :query
              LIMIT 10"
         );
         $stmt->execute([
-            'user_id' => $userId,
-            'query'   => '%' . $query . '%',
+            'household_id' => $householdId,
+            'query'        => '%' . $query . '%',
         ]);
         return array_column($stmt->fetchAll(), 'description');
     }

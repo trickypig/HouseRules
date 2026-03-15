@@ -5,11 +5,12 @@ function registerChoreRoutes(Router $router, PDO $db): void
     // GET /chores — templates + instances (parent)
     $router->get('/chores', function (array $params) use ($db) {
         $user = requireParent();
+        $householdId = $user['household_id'];
 
-        ChoreTemplate::generateForUser($db, $user['id']);
+        ChoreTemplate::generateForHousehold($db, $householdId);
 
-        $templates = ChoreTemplate::getByUser($db, $user['id']);
-        $instances = ChoreInstance::getByUser($db, $user['id'], [
+        $templates = ChoreTemplate::getByHousehold($db, $householdId);
+        $instances = ChoreInstance::getByHousehold($db, $householdId, [
             'status' => $_GET['status'] ?? null,
             'kid_id' => $_GET['kid_id'] ?? null,
             'from'   => $_GET['from'] ?? null,
@@ -23,17 +24,18 @@ function registerChoreRoutes(Router $router, PDO $db): void
     $router->post('/chores', function (array $params) use ($db) {
         $user = requireParent();
         $body = $params['_body'];
+        $householdId = $user['household_id'];
 
         $missing = Validator::required($body, ['title']);
         if (!empty($missing)) {
             Response::error('Missing required fields: ' . implode(', ', $missing));
         }
 
-        // Validate assigned kid belongs to parent
+        // Validate assigned kid belongs to household
         $assignedKidId = isset($body['assigned_kid_id']) ? (int) $body['assigned_kid_id'] : null;
         if ($assignedKidId) {
             $kid = Kid::getById($db, $assignedKidId);
-            if (!$kid || $kid['user_id'] !== $user['id']) {
+            if (!$kid || $kid['household_id'] != $householdId) {
                 Response::error('Invalid kid assignment');
             }
         }
@@ -50,13 +52,14 @@ function registerChoreRoutes(Router $router, PDO $db): void
                 isset($body['day_of_month']) ? (int) $body['day_of_month'] : null,
                 $assignedKidId,
                 $body['start_date'] ?? date('Y-m-d'),
-                $body['end_date'] ?? null
+                $body['end_date'] ?? null,
+                $householdId
             );
         } catch (InvalidArgumentException $e) {
             Response::error($e->getMessage());
         }
 
-        ChoreTemplate::generateForUser($db, $user['id']);
+        ChoreTemplate::generateForHousehold($db, $householdId);
 
         $template = ChoreTemplate::getById($db, $id);
         Response::json(['template' => $template], 201);
@@ -68,13 +71,13 @@ function registerChoreRoutes(Router $router, PDO $db): void
         $body = $params['_body'];
         $template = ChoreTemplate::getById($db, (int) $params['id']);
 
-        if (!$template || $template['user_id'] !== $user['id']) {
+        if (!$template || $template['household_id'] != $user['household_id']) {
             Response::notFound('Chore template not found');
         }
 
         if (isset($body['assigned_kid_id']) && $body['assigned_kid_id']) {
             $kid = Kid::getById($db, (int) $body['assigned_kid_id']);
-            if (!$kid || $kid['user_id'] !== $user['id']) {
+            if (!$kid || $kid['household_id'] != $user['household_id']) {
                 Response::error('Invalid kid assignment');
             }
         }
@@ -94,7 +97,7 @@ function registerChoreRoutes(Router $router, PDO $db): void
         $user = requireParent();
         $template = ChoreTemplate::getById($db, (int) $params['id']);
 
-        if (!$template || $template['user_id'] !== $user['id']) {
+        if (!$template || $template['household_id'] != $user['household_id']) {
             Response::notFound('Chore template not found');
         }
 
@@ -105,10 +108,11 @@ function registerChoreRoutes(Router $router, PDO $db): void
     // GET /chores/instances — list instances with filters (parent)
     $router->get('/chores/instances', function (array $params) use ($db) {
         $user = requireParent();
+        $householdId = $user['household_id'];
 
-        ChoreTemplate::generateForUser($db, $user['id']);
+        ChoreTemplate::generateForHousehold($db, $householdId);
 
-        $instances = ChoreInstance::getByUser($db, $user['id'], [
+        $instances = ChoreInstance::getByHousehold($db, $householdId, [
             'status' => $_GET['status'] ?? null,
             'kid_id' => $_GET['kid_id'] ?? null,
             'from'   => $_GET['from'] ?? null,
@@ -127,23 +131,23 @@ function registerChoreRoutes(Router $router, PDO $db): void
             Response::notFound('Chore instance not found');
         }
 
-        // Verify ownership via template or kid
+        // Verify ownership via template or kid household
         $owned = false;
         if ($instance['chore_template_id']) {
             $tpl = ChoreTemplate::getById($db, $instance['chore_template_id']);
-            if ($tpl && $tpl['user_id'] === $user['id']) {
+            if ($tpl && $tpl['household_id'] == $user['household_id']) {
                 $owned = true;
             }
         }
         if (!$owned && $instance['kid_id']) {
             $kid = Kid::getById($db, $instance['kid_id']);
-            if ($kid && $kid['user_id'] === $user['id']) {
+            if ($kid && $kid['household_id'] == $user['household_id']) {
                 $owned = true;
             }
         }
         if (!$owned && $instance['claimed_by_kid_id']) {
             $kid = Kid::getById($db, $instance['claimed_by_kid_id']);
-            if ($kid && $kid['user_id'] === $user['id']) {
+            if ($kid && $kid['household_id'] == $user['household_id']) {
                 $owned = true;
             }
         }
@@ -166,18 +170,18 @@ function registerChoreRoutes(Router $router, PDO $db): void
             Response::notFound('Chore instance not found');
         }
 
-        // Check ownership (same as verify)
+        // Check ownership
         $owned = false;
         if ($instance['chore_template_id']) {
             $tpl = ChoreTemplate::getById($db, $instance['chore_template_id']);
-            if ($tpl && $tpl['user_id'] === $user['id']) {
+            if ($tpl && $tpl['household_id'] == $user['household_id']) {
                 $owned = true;
             }
         }
         if (!$owned && ($instance['kid_id'] || $instance['claimed_by_kid_id'])) {
             $kidId = $instance['kid_id'] ?? $instance['claimed_by_kid_id'];
             $kid = Kid::getById($db, $kidId);
-            if ($kid && $kid['user_id'] === $user['id']) {
+            if ($kid && $kid['household_id'] == $user['household_id']) {
                 $owned = true;
             }
         }
@@ -205,11 +209,11 @@ function registerChoreRoutes(Router $router, PDO $db): void
             Response::notFound('Kid record not found');
         }
 
-        // Generate chores for the parent
-        ChoreTemplate::generateForUser($db, $kid['user_id']);
+        // Generate chores for the household
+        ChoreTemplate::generateForHousehold($db, $user['household_id']);
 
         $myChores = ChoreInstance::getByKid($db, $kid['id']);
-        $openChores = ChoreInstance::getOpenChores($db, $kid['user_id']);
+        $openChores = ChoreInstance::getOpenChores($db, $user['household_id']);
 
         Response::json(['my_chores' => $myChores, 'open_chores' => $openChores]);
     });
@@ -226,19 +230,19 @@ function registerChoreRoutes(Router $router, PDO $db): void
             Response::notFound('Chore not found or not available');
         }
 
-        // Verify it's an open chore from kid's family
+        // Verify it's an open chore from kid's household
         if ($instance['kid_id'] !== null || $instance['claimed_by_kid_id'] !== null) {
             Response::error('This chore is already assigned', 400);
         }
 
-        $kid = Kid::getById($db, $user['kid_id']);
         if ($instance['chore_template_id']) {
             $tpl = ChoreTemplate::getById($db, $instance['chore_template_id']);
-            if (!$tpl || $tpl['user_id'] !== $kid['user_id']) {
+            if (!$tpl || $tpl['household_id'] != $user['household_id']) {
                 Response::notFound('Chore not found');
             }
         }
 
+        $kid = Kid::getById($db, $user['kid_id']);
         ChoreInstance::claim($db, (int) $params['id'], $kid['id']);
         $updated = ChoreInstance::getById($db, (int) $params['id']);
         Response::json(['instance' => $updated]);

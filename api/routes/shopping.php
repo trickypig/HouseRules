@@ -2,20 +2,10 @@
 
 function registerShoppingRoutes(Router $router, PDO $db): void
 {
-    // Helper: get family owner user_id
-    $getFamilyUserId = function (array $user) use ($db): int {
-        if (($user['role'] ?? 'parent') === 'kid' && $user['parent_id']) {
-            return (int) $user['parent_id'];
-        }
-        return (int) $user['id'];
-    };
-
     // GET /shopping/lists
-    $router->get('/shopping/lists', function (array $params) use ($db, $getFamilyUserId) {
+    $router->get('/shopping/lists', function (array $params) use ($db) {
         $user = authenticate();
-        $familyUserId = $getFamilyUserId($user);
-
-        $lists = ShoppingList::getByUser($db, $familyUserId);
+        $lists = ShoppingList::getByHousehold($db, $user['household_id']);
         Response::json(['lists' => $lists]);
     });
 
@@ -29,7 +19,7 @@ function registerShoppingRoutes(Router $router, PDO $db): void
             Response::error('Missing required fields: ' . implode(', ', $missing));
         }
 
-        $id = ShoppingList::create($db, $user['id'], $body['name']);
+        $id = ShoppingList::create($db, $user['id'], $body['name'], $user['household_id']);
         $list = ShoppingList::getById($db, $id);
         Response::json(['list' => $list], 201);
     });
@@ -40,7 +30,7 @@ function registerShoppingRoutes(Router $router, PDO $db): void
         $body = $params['_body'];
         $list = ShoppingList::getById($db, (int) $params['id']);
 
-        if (!$list || $list['user_id'] !== $user['id']) {
+        if (!$list || $list['household_id'] != $user['household_id']) {
             Response::notFound('Shopping list not found');
         }
 
@@ -54,7 +44,7 @@ function registerShoppingRoutes(Router $router, PDO $db): void
         $user = requireParent();
         $list = ShoppingList::getById($db, (int) $params['id']);
 
-        if (!$list || $list['user_id'] !== $user['id']) {
+        if (!$list || $list['household_id'] != $user['household_id']) {
             Response::notFound('Shopping list not found');
         }
 
@@ -63,12 +53,11 @@ function registerShoppingRoutes(Router $router, PDO $db): void
     });
 
     // GET /shopping/lists/{id}/items
-    $router->get('/shopping/lists/{id}/items', function (array $params) use ($db, $getFamilyUserId) {
+    $router->get('/shopping/lists/{id}/items', function (array $params) use ($db) {
         $user = authenticate();
-        $familyUserId = $getFamilyUserId($user);
         $list = ShoppingList::getById($db, (int) $params['id']);
 
-        if (!$list || $list['user_id'] !== $familyUserId) {
+        if (!$list || $list['household_id'] != $user['household_id']) {
             Response::notFound('Shopping list not found');
         }
 
@@ -77,13 +66,12 @@ function registerShoppingRoutes(Router $router, PDO $db): void
     });
 
     // POST /shopping/lists/{id}/items
-    $router->post('/shopping/lists/{id}/items', function (array $params) use ($db, $getFamilyUserId) {
+    $router->post('/shopping/lists/{id}/items', function (array $params) use ($db) {
         $user = authenticate();
-        $familyUserId = $getFamilyUserId($user);
         $body = $params['_body'];
         $list = ShoppingList::getById($db, (int) $params['id']);
 
-        if (!$list || $list['user_id'] !== $familyUserId) {
+        if (!$list || $list['household_id'] != $user['household_id']) {
             Response::notFound('Shopping list not found');
         }
 
@@ -109,9 +97,8 @@ function registerShoppingRoutes(Router $router, PDO $db): void
     });
 
     // PUT /shopping/items/{id}
-    $router->put('/shopping/items/{id}', function (array $params) use ($db, $getFamilyUserId) {
+    $router->put('/shopping/items/{id}', function (array $params) use ($db) {
         $user = authenticate();
-        $familyUserId = $getFamilyUserId($user);
         $body = $params['_body'];
         $item = ShoppingListItem::getById($db, (int) $params['id']);
 
@@ -120,7 +107,7 @@ function registerShoppingRoutes(Router $router, PDO $db): void
         }
 
         $list = ShoppingList::getById($db, $item['list_id']);
-        if (!$list || $list['user_id'] !== $familyUserId) {
+        if (!$list || $list['household_id'] != $user['household_id']) {
             Response::notFound('Item not found');
         }
 
@@ -130,9 +117,8 @@ function registerShoppingRoutes(Router $router, PDO $db): void
     });
 
     // POST /shopping/items/{id}/toggle
-    $router->post('/shopping/items/{id}/toggle', function (array $params) use ($db, $getFamilyUserId) {
+    $router->post('/shopping/items/{id}/toggle', function (array $params) use ($db) {
         $user = authenticate();
-        $familyUserId = $getFamilyUserId($user);
         $item = ShoppingListItem::getById($db, (int) $params['id']);
 
         if (!$item) {
@@ -140,7 +126,7 @@ function registerShoppingRoutes(Router $router, PDO $db): void
         }
 
         $list = ShoppingList::getById($db, $item['list_id']);
-        if (!$list || $list['user_id'] !== $familyUserId) {
+        if (!$list || $list['household_id'] != $user['household_id']) {
             Response::notFound('Item not found');
         }
 
@@ -150,9 +136,8 @@ function registerShoppingRoutes(Router $router, PDO $db): void
     });
 
     // DELETE /shopping/items/{id}
-    $router->delete('/shopping/items/{id}', function (array $params) use ($db, $getFamilyUserId) {
+    $router->delete('/shopping/items/{id}', function (array $params) use ($db) {
         $user = authenticate();
-        $familyUserId = $getFamilyUserId($user);
         $item = ShoppingListItem::getById($db, (int) $params['id']);
 
         if (!$item) {
@@ -160,7 +145,7 @@ function registerShoppingRoutes(Router $router, PDO $db): void
         }
 
         $list = ShoppingList::getById($db, $item['list_id']);
-        if (!$list || $list['user_id'] !== $familyUserId) {
+        if (!$list || $list['household_id'] != $user['household_id']) {
             Response::notFound('Item not found');
         }
 
@@ -175,16 +160,15 @@ function registerShoppingRoutes(Router $router, PDO $db): void
     });
 
     // GET /shopping/autocomplete?q=
-    $router->get('/shopping/autocomplete', function (array $params) use ($db, $getFamilyUserId) {
+    $router->get('/shopping/autocomplete', function (array $params) use ($db) {
         $user = authenticate();
-        $familyUserId = $getFamilyUserId($user);
         $query = $_GET['q'] ?? '';
 
         if (strlen($query) < 1) {
             Response::json(['suggestions' => []]);
         }
 
-        $suggestions = ShoppingListItem::autocomplete($db, $familyUserId, $query);
+        $suggestions = ShoppingListItem::autocomplete($db, $user['household_id'], $query);
         Response::json(['suggestions' => $suggestions]);
     });
 }

@@ -9,6 +9,13 @@ class Kid
         return $stmt->fetchAll();
     }
 
+    public static function getByHousehold(PDO $db, int $householdId): array
+    {
+        $stmt = $db->prepare('SELECT * FROM kids WHERE household_id = :household_id ORDER BY sort_order, name');
+        $stmt->execute(['household_id' => $householdId]);
+        return $stmt->fetchAll();
+    }
+
     public static function getById(PDO $db, int $id): array|false
     {
         $stmt = $db->prepare('SELECT * FROM kids WHERE id = :id');
@@ -16,20 +23,21 @@ class Kid
         return $stmt->fetch();
     }
 
-    public static function create(PDO $db, int $userId, string $name, string $color = '#4A90D9', string $avatar = ''): int
+    public static function create(PDO $db, int $userId, string $name, string $color = '#4A90D9', string $avatar = '', ?int $householdId = null): int
     {
         $stmt = $db->prepare(
-            'INSERT INTO kids (user_id, name, color, avatar, created_at, updated_at)
-             VALUES (:user_id, :name, :color, :avatar, :created_at, :updated_at)'
+            'INSERT INTO kids (user_id, name, color, avatar, household_id, created_at, updated_at)
+             VALUES (:user_id, :name, :color, :avatar, :household_id, :created_at, :updated_at)'
         );
         $now = date('Y-m-d H:i:s');
         $stmt->execute([
-            'user_id'    => $userId,
-            'name'       => $name,
-            'color'      => $color,
-            'avatar'     => $avatar,
-            'created_at' => $now,
-            'updated_at' => $now,
+            'user_id'      => $userId,
+            'name'         => $name,
+            'color'        => $color,
+            'avatar'       => $avatar,
+            'household_id' => $householdId,
+            'created_at'   => $now,
+            'updated_at'   => $now,
         ]);
         return (int) $db->lastInsertId();
     }

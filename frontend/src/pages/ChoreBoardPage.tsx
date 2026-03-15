@@ -369,6 +369,16 @@ function KidChoreView() {
     }
   }
 
+  async function handleClaimAndComplete(id: number) {
+    try {
+      await api.claimChore(id);
+      await api.completeChore(id);
+      await load();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to complete');
+    }
+  }
+
   async function handleComplete(id: number) {
     try {
       await api.completeChore(id);
@@ -421,7 +431,10 @@ function KidChoreView() {
                   {c.amount != null && <span className="badge badge-success" style={{ marginLeft: '0.5rem' }}>${Number(c.amount).toFixed(2)}</span>}
                   <span style={{ marginLeft: '0.5rem', color: 'var(--text-secondary)' }}>{formatDate(c.due_date)}</span>
                 </div>
-                <button className="btn btn-sm btn-outline" onClick={() => handleClaim(c.id)}>Claim</button>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button className="btn btn-sm btn-outline" onClick={() => handleClaim(c.id)}>I'll Do It</button>
+                  <button className="btn btn-sm btn-primary" onClick={() => handleClaimAndComplete(c.id)}>I Did It</button>
+                </div>
               </div>
             ))}
           </div>

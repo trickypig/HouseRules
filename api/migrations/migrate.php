@@ -41,6 +41,16 @@ function addColumn(PDO $db, string $table, string $column, string $definition): 
     }
 }
 
+// ---- households ----
+$db->exec("CREATE TABLE IF NOT EXISTS households (
+    id {$autoIncrement},
+    name VARCHAR(255) NOT NULL DEFAULT '',
+    invite_code VARCHAR(32) UNIQUE,
+    created_at {$timestampType} NOT NULL,
+    updated_at {$timestampType} NOT NULL
+)");
+echo "  [OK] households\n";
+
 // ---- users ----
 $db->exec("CREATE TABLE IF NOT EXISTS users (
     id {$autoIncrement},
@@ -60,6 +70,8 @@ echo "  [OK] users\n";
 addColumn($db, 'users', 'role', "VARCHAR(20) NOT NULL DEFAULT 'parent'");
 addColumn($db, 'users', 'parent_id', 'INTEGER');
 addColumn($db, 'users', 'kid_id', 'INTEGER');
+addColumn($db, 'users', 'family_display_name', "VARCHAR(255) NOT NULL DEFAULT ''");
+addColumn($db, 'users', 'household_id', 'INTEGER');
 
 // ---- kids ----
 $db->exec("CREATE TABLE IF NOT EXISTS kids (
@@ -74,6 +86,8 @@ $db->exec("CREATE TABLE IF NOT EXISTS kids (
     FOREIGN KEY (user_id) REFERENCES users(id)
 )");
 echo "  [OK] kids\n";
+
+addColumn($db, 'kids', 'household_id', 'INTEGER');
 
 // ---- recurring_transactions ----
 $db->exec("CREATE TABLE IF NOT EXISTS recurring_transactions (
@@ -172,6 +186,8 @@ $db->exec("CREATE TABLE IF NOT EXISTS chore_templates (
 )");
 echo "  [OK] chore_templates\n";
 
+addColumn($db, 'chore_templates', 'household_id', 'INTEGER');
+
 // ---- chore_instances ----
 $db->exec("CREATE TABLE IF NOT EXISTS chore_instances (
     id {$autoIncrement},
@@ -206,6 +222,8 @@ $db->exec("CREATE TABLE IF NOT EXISTS shopping_lists (
 )");
 echo "  [OK] shopping_lists\n";
 
+addColumn($db, 'shopping_lists', 'household_id', 'INTEGER');
+
 // ---- shopping_list_items ----
 $db->exec("CREATE TABLE IF NOT EXISTS shopping_list_items (
     id {$autoIncrement},
@@ -222,6 +240,28 @@ $db->exec("CREATE TABLE IF NOT EXISTS shopping_list_items (
     FOREIGN KEY (added_by_user_id) REFERENCES users(id)
 )");
 echo "  [OK] shopping_list_items\n";
+
+// ---- Household data migration ----
+// Create households for existing parent users that don't have one
+$orphanParents = $db->query("SELECT id, display_name FROM users WHERE role = 'parent' AND (household_id IS NULL OR household_id = 0)")->fetchAll();
+foreach ($orphanParents as $parent) {
+    $now = date('Y-m-d H:i:s');
+    $inviteCode = bin2hex(random_bytes(6));
+    $db->prepare(
+        "INSERT INTO households (name, invite_code, created_at, updated_at) VALUES (:name, :code, :now, :now)"
+    )->execute(['name' => $parent['display_name'] . "'s Family", 'code' => $inviteCode, 'now' => $now]);
+    $householdId = (int) $db->lastInsertId();
+
+    $db->prepare("UPDATE users SET household_id = :hid WHERE id = :id")->execute(['hid' => $householdId, 'id' => $parent['id']]);
+    $db->prepare("UPDATE kids SET household_id = :hid WHERE user_id = :uid AND (household_id IS NULL OR household_id = 0)")->execute(['hid' => $householdId, 'uid' => $parent['id']]);
+    $db->prepare("UPDATE chore_templates SET household_id = :hid WHERE user_id = :uid AND (household_id IS NULL OR household_id = 0)")->execute(['hid' => $householdId, 'uid' => $parent['id']]);
+    $db->prepare("UPDATE shopping_lists SET household_id = :hid WHERE user_id = :uid AND (household_id IS NULL OR household_id = 0)")->execute(['hid' => $householdId, 'uid' => $parent['id']]);
+    // Also set household_id on kid users belonging to this parent
+    $db->prepare("UPDATE users SET household_id = :hid WHERE parent_id = :pid AND role = 'kid' AND (household_id IS NULL OR household_id = 0)")->execute(['hid' => $householdId, 'pid' => $parent['id']]);
+
+    echo "  [OK] Created household for user {$parent['id']}\n";
+}
+echo "  [OK] household migration\n";
 
 // ---- Indexes ----
 $indexes = [
@@ -246,6 +286,10 @@ $indexes = [
     'CREATE INDEX IF NOT EXISTS idx_chore_instances_status ON chore_instances(status)',
     'CREATE INDEX IF NOT EXISTS idx_shopping_lists_user ON shopping_lists(user_id)',
     'CREATE INDEX IF NOT EXISTS idx_shopping_items_list ON shopping_list_items(list_id)',
+    'CREATE INDEX IF NOT EXISTS idx_users_household ON users(household_id)',
+    'CREATE INDEX IF NOT EXISTS idx_kids_household ON kids(household_id)',
+    'CREATE INDEX IF NOT EXISTS idx_chore_templates_household ON chore_templates(household_id)',
+    'CREATE INDEX IF NOT EXISTS idx_shopping_lists_household ON shopping_lists(household_id)',
 ];
 
 foreach ($indexes as $idx) {

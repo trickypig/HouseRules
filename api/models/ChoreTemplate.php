@@ -17,6 +17,19 @@ class ChoreTemplate
         return $stmt->fetchAll();
     }
 
+    public static function getByHousehold(PDO $db, int $householdId): array
+    {
+        $stmt = $db->prepare(
+            'SELECT ct.*, k.name as assigned_kid_name
+             FROM chore_templates ct
+             LEFT JOIN kids k ON k.id = ct.assigned_kid_id
+             WHERE ct.household_id = :household_id
+             ORDER BY ct.created_at DESC'
+        );
+        $stmt->execute(['household_id' => $householdId]);
+        return $stmt->fetchAll();
+    }
+
     public static function getById(PDO $db, int $id): array|false
     {
         $stmt = $db->prepare(
@@ -40,15 +53,16 @@ class ChoreTemplate
         ?int $dayOfMonth,
         ?int $assignedKidId,
         string $startDate,
-        ?string $endDate
+        ?string $endDate,
+        ?int $householdId = null
     ): int {
         if ($frequency !== null && !in_array($frequency, self::$validFrequencies)) {
             throw new InvalidArgumentException('Invalid frequency');
         }
 
         $stmt = $db->prepare(
-            'INSERT INTO chore_templates (user_id, title, description, amount, frequency, day_of_week, day_of_month, assigned_kid_id, start_date, end_date, is_active, created_at, updated_at)
-             VALUES (:user_id, :title, :description, :amount, :frequency, :day_of_week, :day_of_month, :assigned_kid_id, :start_date, :end_date, 1, :created_at, :updated_at)'
+            'INSERT INTO chore_templates (user_id, title, description, amount, frequency, day_of_week, day_of_month, assigned_kid_id, start_date, end_date, is_active, household_id, created_at, updated_at)
+             VALUES (:user_id, :title, :description, :amount, :frequency, :day_of_week, :day_of_month, :assigned_kid_id, :start_date, :end_date, 1, :household_id, :created_at, :updated_at)'
         );
         $now = date('Y-m-d H:i:s');
         $stmt->execute([
@@ -62,6 +76,7 @@ class ChoreTemplate
             'assigned_kid_id' => $assignedKidId,
             'start_date'      => $startDate,
             'end_date'        => $endDate,
+            'household_id'    => $householdId,
             'created_at'      => $now,
             'updated_at'      => $now,
         ]);
@@ -110,19 +125,19 @@ class ChoreTemplate
      * Generate chore instances for a user's templates.
      * Similar to RecurringTransaction::generateForKid().
      */
-    public static function generateForUser(PDO $db, int $userId): int
+    public static function generateForHousehold(PDO $db, int $householdId): int
     {
         $today = date('Y-m-d');
 
         // Mark missed: past due_date + still pending
         $stmt = $db->prepare(
             "UPDATE chore_instances SET status = 'missed'
-             WHERE chore_template_id IN (SELECT id FROM chore_templates WHERE user_id = :user_id)
+             WHERE chore_template_id IN (SELECT id FROM chore_templates WHERE household_id = :household_id)
              AND status = 'pending' AND due_date < :today"
         );
-        $stmt->execute(['user_id' => $userId, 'today' => $today]);
+        $stmt->execute(['household_id' => $householdId, 'today' => $today]);
 
-        $templates = self::getActiveTemplates($db, $userId);
+        $templates = self::getActiveTemplatesForHousehold($db, $householdId);
         $generated = 0;
 
         foreach ($templates as $tpl) {
@@ -209,6 +224,13 @@ class ChoreTemplate
     {
         $stmt = $db->prepare('SELECT * FROM chore_templates WHERE user_id = :user_id AND is_active = 1');
         $stmt->execute(['user_id' => $userId]);
+        return $stmt->fetchAll();
+    }
+
+    private static function getActiveTemplatesForHousehold(PDO $db, int $householdId): array
+    {
+        $stmt = $db->prepare('SELECT * FROM chore_templates WHERE household_id = :household_id AND is_active = 1');
+        $stmt->execute(['household_id' => $householdId]);
         return $stmt->fetchAll();
     }
 

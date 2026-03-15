@@ -77,6 +77,29 @@ function registerAuthRoutes(Router $router, PDO $db): void
         Response::json(['user' => $user]);
     });
 
+    // PUT /auth/profile - update current user's profile
+    $router->put('/auth/profile', function (array $params) use ($db) {
+        $user = authenticate();
+        $body = $params['_body'];
+
+        $updateData = [];
+        if (isset($body['display_name']) && trim($body['display_name']) !== '') {
+            $updateData['display_name'] = trim($body['display_name']);
+        }
+        if (array_key_exists('family_display_name', $body)) {
+            $updateData['family_display_name'] = trim($body['family_display_name'] ?? '');
+        }
+
+        if (empty($updateData)) {
+            Response::error('No fields to update');
+        }
+
+        User::updateProfile($db, $user['id'], $updateData);
+        $updated = User::findById($db, $user['id']);
+
+        Response::json(['user' => $updated]);
+    });
+
     // POST /auth/kid-login - parent creates a login for a kid
     $router->post('/auth/kid-login', function (array $params) use ($db) {
         $user = requireParent();
@@ -95,9 +118,9 @@ function registerAuthRoutes(Router $router, PDO $db): void
             Response::error('Password must be at least 4 characters');
         }
 
-        // Verify the kid belongs to this parent
+        // Verify the kid belongs to this household
         $kid = Kid::getById($db, (int) $body['kid_id']);
-        if (!$kid || $kid['user_id'] !== $user['id']) {
+        if (!$kid || $kid['household_id'] != $user['household_id']) {
             Response::notFound('Kid not found');
         }
 
@@ -114,7 +137,7 @@ function registerAuthRoutes(Router $router, PDO $db): void
         }
 
         $displayName = $body['display_name'] ?? $kid['name'];
-        $kidUserId = User::createKidUser($db, $user['id'], $kid['id'], $body['email'], $body['password'], $displayName);
+        $kidUserId = User::createKidUser($db, $user['id'], $kid['id'], $body['email'], $body['password'], $displayName, $user['household_id']);
         $kidUser = User::findById($db, $kidUserId);
 
         Response::json(['kid_user' => $kidUser], 201);
@@ -123,7 +146,7 @@ function registerAuthRoutes(Router $router, PDO $db): void
     // GET /auth/kid-users - list kid logins for this parent
     $router->get('/auth/kid-users', function (array $params) use ($db) {
         $user = requireParent();
-        $kidUsers = User::getKidUsers($db, $user['id']);
+        $kidUsers = User::getKidUsers($db, $user['household_id']);
 
         Response::json(['kid_users' => $kidUsers]);
     });
@@ -134,7 +157,7 @@ function registerAuthRoutes(Router $router, PDO $db): void
         $body = $params['_body'];
 
         $kidUser = User::findById($db, (int) $params['id']);
-        if (!$kidUser || ($kidUser['parent_id'] ?? null) !== $user['id'] || ($kidUser['role'] ?? 'parent') !== 'kid') {
+        if (!$kidUser || ($kidUser['household_id'] ?? null) != $user['household_id'] || ($kidUser['role'] ?? 'parent') !== 'kid') {
             Response::notFound('Kid user not found');
         }
 
@@ -146,7 +169,7 @@ function registerAuthRoutes(Router $router, PDO $db): void
         }
 
         if (isset($body['display_name'])) {
-            User::updateProfile($db, $kidUser['id'], $body['display_name']);
+            User::updateProfile($db, $kidUser['id'], ['display_name' => $body['display_name']]);
         }
 
         $updated = User::findById($db, $kidUser['id']);
@@ -158,7 +181,7 @@ function registerAuthRoutes(Router $router, PDO $db): void
         $user = requireParent();
 
         $kidUser = User::findById($db, (int) $params['id']);
-        if (!$kidUser || ($kidUser['parent_id'] ?? null) !== $user['id'] || ($kidUser['role'] ?? 'parent') !== 'kid') {
+        if (!$kidUser || ($kidUser['household_id'] ?? null) != $user['household_id'] || ($kidUser['role'] ?? 'parent') !== 'kid') {
             Response::notFound('Kid user not found');
         }
 

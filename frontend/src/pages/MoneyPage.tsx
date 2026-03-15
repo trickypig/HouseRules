@@ -9,13 +9,6 @@ export default function MoneyPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Add kid form
-  const [showAddKid, setShowAddKid] = useState(false);
-  const [newKidName, setNewKidName] = useState('');
-  const [newKidColor, setNewKidColor] = useState('#4A90D9');
-  const [newKidAvatar, setNewKidAvatar] = useState('');
-  const [adding, setAdding] = useState(false);
-
   // Quick add transaction
   const [quickKidId, setQuickKidId] = useState<number | 'all' | null>(null);
   const [quickType, setQuickType] = useState<'credit' | 'debit'>('credit');
@@ -37,23 +30,6 @@ export default function MoneyPage() {
       setError(err instanceof Error ? err.message : 'Failed to load dashboard');
     } finally {
       setLoading(false);
-    }
-  }
-
-  async function handleAddKid(e: FormEvent) {
-    e.preventDefault();
-    setAdding(true);
-    try {
-      await api.createKid({ name: newKidName, color: newKidColor, avatar: newKidAvatar });
-      setNewKidName('');
-      setNewKidColor('#4A90D9');
-      setNewKidAvatar('');
-      setShowAddKid(false);
-      loadDashboard();
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to add kid');
-    } finally {
-      setAdding(false);
     }
   }
 
@@ -95,42 +71,9 @@ export default function MoneyPage() {
 
   return (
     <div>
-      <div className="section-header">
-        <h1>Money</h1>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button onClick={() => setShowAddKid(!showAddKid)} className="btn btn-primary">
-            + Add Kid
-          </button>
-        </div>
-      </div>
+      <h1>Money</h1>
 
       {error && <div className="error-message">{error}</div>}
-
-      {showAddKid && (
-        <div className="card" style={{ marginBottom: '1.5rem' }}>
-          <h3>Add a Kid</h3>
-          <form onSubmit={handleAddKid}>
-            <div className="form-row">
-              <div className="form-group form-group-grow">
-                <label htmlFor="kidName">Name</label>
-                <input id="kidName" type="text" value={newKidName} onChange={e => setNewKidName(e.target.value)} required placeholder="Kid's name" />
-              </div>
-              <div className="form-group">
-                <label htmlFor="kidColor">Color</label>
-                <input id="kidColor" type="color" value={newKidColor} onChange={e => setNewKidColor(e.target.value)} style={{ height: '38px', padding: '2px' }} />
-              </div>
-              <div className="form-group">
-                <label htmlFor="kidAvatar">Avatar (emoji)</label>
-                <input id="kidAvatar" type="text" value={newKidAvatar} onChange={e => setNewKidAvatar(e.target.value)} placeholder="e.g. &#128522;" style={{ width: '80px' }} />
-              </div>
-            </div>
-            <div className="form-actions">
-              <button type="submit" className="btn btn-primary" disabled={adding}>{adding ? 'Adding...' : 'Add Kid'}</button>
-              <button type="button" className="btn btn-outline" onClick={() => setShowAddKid(false)}>Cancel</button>
-            </div>
-          </form>
-        </div>
-      )}
 
       {kids.length === 0 ? (
         <div className="empty-state">

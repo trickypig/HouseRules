@@ -36,10 +36,12 @@ function generateToken(array $user): string
         'sub'          => $user['id'],
         'email'        => $user['email'],
         'display_name' => $user['display_name'],
+        'family_display_name' => $user['family_display_name'] ?? '',
         'is_admin'     => (int) ($user['is_admin'] ?? 0),
         'role'         => $user['role'] ?? 'parent',
         'parent_id'    => $user['parent_id'] ?? null,
         'kid_id'       => $user['kid_id'] ?? null,
+        'household_id' => $user['household_id'] ?? null,
         'iat'          => time(),
         'exp'          => time() + (30 * 24 * 60 * 60), // 30 days
     ]));
@@ -128,6 +130,7 @@ function authenticate(): array
         'role'         => $payload['role'] ?? 'parent',
         'parent_id'    => $payload['parent_id'] ?? null,
         'kid_id'       => $payload['kid_id'] ?? null,
+        'household_id' => $payload['household_id'] ?? null,
     ];
 }
 

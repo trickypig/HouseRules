@@ -5,7 +5,8 @@ function registerDashboardRoutes(Router $router, PDO $db): void
     // GET /dashboard
     $router->get('/dashboard', function (array $params) use ($db) {
         $user = requireParent();
-        $kids = Kid::getByUser($db, $user['id']);
+        $householdId = $user['household_id'];
+        $kids = Kid::getByHousehold($db, $householdId);
         $kidIds = array_column($kids, 'id');
 
         // Generate recurring transactions for each kid
@@ -14,7 +15,7 @@ function registerDashboardRoutes(Router $router, PDO $db): void
         }
 
         // Generate chore instances
-        ChoreTemplate::generateForUser($db, $user['id']);
+        ChoreTemplate::generateForHousehold($db, $householdId);
 
         // Attach balances, recurring rules, goals, and pending counts to each kid
         foreach ($kids as &$kid) {
@@ -44,12 +45,12 @@ function registerDashboardRoutes(Router $router, PDO $db): void
         }
 
         // Overdue/missed chores
-        $overdueChores = ChoreInstance::getByUser($db, $user['id'], ['status' => 'missed']);
+        $overdueChores = ChoreInstance::getByHousehold($db, $householdId, ['status' => 'missed']);
         // Also get completed chores awaiting verification
-        $completedChores = ChoreInstance::getByUser($db, $user['id'], ['status' => 'completed']);
+        $completedChores = ChoreInstance::getByHousehold($db, $householdId, ['status' => 'completed']);
 
         // Shopping lists with counts
-        $shoppingLists = ShoppingList::getByUser($db, $user['id']);
+        $shoppingLists = ShoppingList::getByHousehold($db, $householdId);
 
         Response::json([
             'kids'                  => $kids,

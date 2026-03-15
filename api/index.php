@@ -30,6 +30,7 @@ require_once __DIR__ . '/models/ChoreTemplate.php';
 require_once __DIR__ . '/models/ChoreInstance.php';
 require_once __DIR__ . '/models/ShoppingList.php';
 require_once __DIR__ . '/models/ShoppingListItem.php';
+require_once __DIR__ . '/models/Household.php';
 
 // Routes
 require_once __DIR__ . '/routes/auth.php';
@@ -41,6 +42,7 @@ require_once __DIR__ . '/routes/dashboard.php';
 require_once __DIR__ . '/routes/kid_portal.php';
 require_once __DIR__ . '/routes/chores.php';
 require_once __DIR__ . '/routes/shopping.php';
+require_once __DIR__ . '/routes/household.php';
 
 // Handle CORS
 handleCors();
@@ -65,6 +67,7 @@ registerDashboardRoutes($router, $db);
 registerKidPortalRoutes($router, $db);
 registerChoreRoutes($router, $db);
 registerShoppingRoutes($router, $db);
+registerHouseholdRoutes($router, $db);
 
 // Dispatch
 $router->dispatch();

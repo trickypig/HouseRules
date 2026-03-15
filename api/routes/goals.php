@@ -2,70 +2,45 @@
 
 function registerGoalRoutes(Router $router, PDO $db): void
 {
-    // GET /kids/{kidId}/goals
-    $router->get('/kids/{kidId}/goals', function (array $params) use ($db) {
-        $user = authenticate();
-        $kid = Kid::getById($db, (int) $params['kidId']);
-
-        // Allow parent (owner) or kid (own record)
+    // Helper to check kid access for both parents and kids
+    $checkKidAccess = function (PDO $db, array $user, int $kidId): array {
+        $kid = Kid::getById($db, $kidId);
         $allowed = false;
         if ($kid) {
-            if (($user['role'] ?? 'parent') === 'parent' && $kid['user_id'] === $user['id']) {
+            if (($user['role'] ?? 'parent') === 'parent' && $kid['household_id'] == $user['household_id']) {
                 $allowed = true;
             }
-            if (($user['role'] ?? 'parent') === 'kid' && $user['kid_id'] === $kid['id']) {
+            if (($user['role'] ?? 'parent') === 'kid' && $user['kid_id'] == $kid['id']) {
                 $allowed = true;
             }
         }
         if (!$allowed) {
             Response::notFound('Kid not found');
         }
+        return $kid;
+    };
 
+    // GET /kids/{kidId}/goals
+    $router->get('/kids/{kidId}/goals', function (array $params) use ($db, $checkKidAccess) {
+        $user = authenticate();
+        $kid = $checkKidAccess($db, $user, (int) $params['kidId']);
         $goals = SavingsGoal::getByKid($db, $kid['id']);
         Response::json(['goals' => $goals]);
     });
 
     // GET /kids/{kidId}/goals/projections
-    $router->get('/kids/{kidId}/goals/projections', function (array $params) use ($db) {
+    $router->get('/kids/{kidId}/goals/projections', function (array $params) use ($db, $checkKidAccess) {
         $user = authenticate();
-        $kid = Kid::getById($db, (int) $params['kidId']);
-
-        $allowed = false;
-        if ($kid) {
-            if (($user['role'] ?? 'parent') === 'parent' && $kid['user_id'] === $user['id']) {
-                $allowed = true;
-            }
-            if (($user['role'] ?? 'parent') === 'kid' && $user['kid_id'] === $kid['id']) {
-                $allowed = true;
-            }
-        }
-        if (!$allowed) {
-            Response::notFound('Kid not found');
-        }
-
+        $kid = $checkKidAccess($db, $user, (int) $params['kidId']);
         $projections = SavingsGoal::computeProjections($db, $kid['id']);
         Response::json(['projections' => $projections]);
     });
 
     // POST /kids/{kidId}/goals
-    $router->post('/kids/{kidId}/goals', function (array $params) use ($db) {
+    $router->post('/kids/{kidId}/goals', function (array $params) use ($db, $checkKidAccess) {
         $user = authenticate();
         $body = $params['_body'];
-        $kid = Kid::getById($db, (int) $params['kidId']);
-
-        // Allow parent or kid (own record)
-        $allowed = false;
-        if ($kid) {
-            if (($user['role'] ?? 'parent') === 'parent' && $kid['user_id'] === $user['id']) {
-                $allowed = true;
-            }
-            if (($user['role'] ?? 'parent') === 'kid' && $user['kid_id'] === $kid['id']) {
-                $allowed = true;
-            }
-        }
-        if (!$allowed) {
-            Response::notFound('Kid not found');
-        }
+        $kid = $checkKidAccess($db, $user, (int) $params['kidId']);
 
         $missing = Validator::required($body, ['name']);
         if (!empty($missing)) {
@@ -81,23 +56,10 @@ function registerGoalRoutes(Router $router, PDO $db): void
     });
 
     // PUT /kids/{kidId}/goals/reorder
-    $router->put('/kids/{kidId}/goals/reorder', function (array $params) use ($db) {
+    $router->put('/kids/{kidId}/goals/reorder', function (array $params) use ($db, $checkKidAccess) {
         $user = authenticate();
         $body = $params['_body'];
-        $kid = Kid::getById($db, (int) $params['kidId']);
-
-        $allowed = false;
-        if ($kid) {
-            if (($user['role'] ?? 'parent') === 'parent' && $kid['user_id'] === $user['id']) {
-                $allowed = true;
-            }
-            if (($user['role'] ?? 'parent') === 'kid' && $user['kid_id'] === $kid['id']) {
-                $allowed = true;
-            }
-        }
-        if (!$allowed) {
-            Response::notFound('Kid not found');
-        }
+        $kid = $checkKidAccess($db, $user, (int) $params['kidId']);
 
         if (empty($body['goal_ids']) || !is_array($body['goal_ids'])) {
             Response::error('goal_ids array required');
@@ -119,14 +81,12 @@ function registerGoalRoutes(Router $router, PDO $db): void
         }
 
         $kid = Kid::getById($db, $goal['kid_id']);
-
-        // Allow parent or kid (own record)
         $allowed = false;
         if ($kid) {
-            if (($user['role'] ?? 'parent') === 'parent' && $kid['user_id'] === $user['id']) {
+            if (($user['role'] ?? 'parent') === 'parent' && $kid['household_id'] == $user['household_id']) {
                 $allowed = true;
             }
-            if (($user['role'] ?? 'parent') === 'kid' && $user['kid_id'] === $kid['id']) {
+            if (($user['role'] ?? 'parent') === 'kid' && $user['kid_id'] == $kid['id']) {
                 $allowed = true;
             }
         }
@@ -154,7 +114,7 @@ function registerGoalRoutes(Router $router, PDO $db): void
         }
 
         $kid = Kid::getById($db, $goal['kid_id']);
-        if (!$kid || $kid['user_id'] !== $user['id']) {
+        if (!$kid || $kid['household_id'] != $user['household_id']) {
             Response::notFound('Goal not found');
         }
 

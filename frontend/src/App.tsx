@@ -12,6 +12,7 @@ import KidMoneyPage from './pages/KidMoneyPage';
 import ChoreBoardPage from './pages/ChoreBoardPage';
 import ShoppingListsPage from './pages/ShoppingListsPage';
 import ShoppingListDetailPage from './pages/ShoppingListDetailPage';
+import SettingsPage from './pages/SettingsPage';
 
 function AppRoutes() {
   const { isKid } = useAuth();
@@ -37,6 +38,7 @@ function AppRoutes() {
         <Route path="/chores" element={<ChoreBoardPage />} />
         <Route path="/shopping" element={<ShoppingListsPage />} />
         <Route path="/shopping/:id" element={<ShoppingListDetailPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
       </Route>
     </Routes>
   );

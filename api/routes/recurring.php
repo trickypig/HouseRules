@@ -7,7 +7,7 @@ function registerRecurringRoutes(Router $router, PDO $db): void
         $user = requireParent();
         $kid = Kid::getById($db, (int) $params['kidId']);
 
-        if (!$kid || $kid['user_id'] !== $user['id']) {
+        if (!$kid || $kid['household_id'] != $user['household_id']) {
             Response::notFound('Kid not found');
         }
 
@@ -21,7 +21,7 @@ function registerRecurringRoutes(Router $router, PDO $db): void
         $body = $params['_body'];
         $kid = Kid::getById($db, (int) $params['kidId']);
 
-        if (!$kid || $kid['user_id'] !== $user['id']) {
+        if (!$kid || $kid['household_id'] != $user['household_id']) {
             Response::notFound('Kid not found');
         }
 
@@ -57,7 +57,6 @@ function registerRecurringRoutes(Router $router, PDO $db): void
             Response::error($e->getMessage());
         }
 
-        // Generate transactions immediately
         RecurringTransaction::generateForKid($db, $kid['id']);
 
         $rule = RecurringTransaction::getById($db, $id);
@@ -75,7 +74,7 @@ function registerRecurringRoutes(Router $router, PDO $db): void
         }
 
         $kid = Kid::getById($db, $rule['kid_id']);
-        if (!$kid || $kid['user_id'] !== $user['id']) {
+        if (!$kid || $kid['household_id'] != $user['household_id']) {
             Response::notFound('Recurring transaction not found');
         }
 
@@ -111,7 +110,7 @@ function registerRecurringRoutes(Router $router, PDO $db): void
         }
 
         $kid = Kid::getById($db, $rule['kid_id']);
-        if (!$kid || $kid['user_id'] !== $user['id']) {
+        if (!$kid || $kid['household_id'] != $user['household_id']) {
             Response::notFound('Recurring transaction not found');
         }
 

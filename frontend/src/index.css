@@ -159,6 +159,17 @@ img {
   color: var(--color-text-secondary);
 }
 
+.user-name-link {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  text-decoration: none;
+}
+
+.user-name-link:hover {
+  color: var(--color-primary);
+}
+
 /* ===== Buttons ===== */
 .btn {
   display: inline-flex;
@@ -686,4 +697,16 @@ img {
   .side-cards {
     grid-template-columns: 1fr;
   }
+}
+
+/* Page header with inline action button */
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.page-header h1 {
+  margin: 0;
 }

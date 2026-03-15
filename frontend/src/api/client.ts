@@ -1,4 +1,4 @@
-import type { User, Kid, Transaction, RecurringTransaction, SavingsGoal, GoalProjection, Pagination, KidUser, ChoreTemplate, ChoreInstance, ShoppingList, ShoppingListItem } from '../types';
+import type { User, Kid, Transaction, RecurringTransaction, SavingsGoal, GoalProjection, Pagination, KidUser, ChoreTemplate, ChoreInstance, ShoppingList, ShoppingListItem, Household, HouseholdMember } from '../types';
 
 const BASE_URL = import.meta.env.DEV ? 'http://localhost:8080' : '';
 
@@ -55,6 +55,27 @@ export function register(email: string, password: string, display_name: string) 
 
 export function getMe() {
   return apiClient.get<{ user: User }>('/auth/me');
+}
+
+export function updateProfile(data: { display_name?: string; family_display_name?: string }) {
+  return apiClient.put<{ user: User }>('/auth/profile', data);
+}
+
+// Household
+export function getHousehold() {
+  return apiClient.get<{ household: Household; members: HouseholdMember[] }>('/household');
+}
+
+export function updateHousehold(data: { name: string }) {
+  return apiClient.put<{ household: Household }>('/household', data);
+}
+
+export function regenerateInviteCode() {
+  return apiClient.post<{ invite_code: string }>('/household/regenerate-code');
+}
+
+export function joinHousehold(inviteCode: string) {
+  return apiClient.post<{ token: string; user: User; household: Household }>('/household/join', { invite_code: inviteCode });
 }
 
 // Kid Logins
