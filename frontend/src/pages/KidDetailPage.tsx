@@ -762,7 +762,7 @@ export default function KidDetailPage() {
           <p className="text-muted">No savings goals yet.</p>
         ) : (
           <div className="items-list">
-            {goals.map((goal, idx) => {
+            {goals.map((goal) => {
               const progress = goal.target_amount ? Math.min(100, (Number(goal.current_amount) / Number(goal.target_amount)) * 100) : null;
               const proj = projections.find(p => p.goal_id === goal.id);
               const incompleteGoals = goals.filter(g => !g.is_completed);
