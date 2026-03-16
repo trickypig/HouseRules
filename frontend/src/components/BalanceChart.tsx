@@ -30,10 +30,11 @@ export default function BalanceChart({ data, color, futureData, goals }: Balance
   const allData = futureData?.length ? [...data, ...futureData] : data;
   const historicalCount = data.length;
 
+  const hasGoals = goals && goals.length > 0;
   const W = 600;
   const H = 200;
   const PAD_L = 50;
-  const PAD_R = 10;
+  const PAD_R = hasGoals ? 70 : 10;
   const PAD_T = 15;
   const PAD_B = 30;
 
@@ -121,19 +122,17 @@ export default function BalanceChart({ data, color, futureData, goals }: Balance
           </g>
         ))}
 
-        {/* Zero line if range includes zero */}
-        {yMin < 0 && yMax > 0 && (
-          <line x1={PAD_L} x2={W - PAD_R} y1={toY(0)} y2={toY(0)} stroke="var(--color-text-muted)" strokeWidth={0.5} strokeDasharray="3,3" />
-        )}
-
         {/* Goal lines */}
         {goals?.map((g, i) => {
           const gy = toY(g.target_amount);
           return (
             <g key={`goal-${i}`}>
-              <line x1={PAD_L} x2={W - PAD_R} y1={gy} y2={gy} stroke="var(--color-warning)" strokeWidth={1} strokeDasharray="5,3" opacity={0.7} />
-              <text x={W - PAD_R + 2} y={gy + 3} fontSize={8} fill="var(--color-warning)" textAnchor="start" opacity={0.9}>
+              <line x1={PAD_L} x2={W - 5} y1={gy} y2={gy} stroke="var(--color-text-muted)" strokeWidth={0.5} strokeDasharray="5,3" opacity={0.7} />
+              <text x={W - PAD_R + 4} y={gy - 4} fontSize={8} fill="var(--color-warning)" textAnchor="start" fontWeight={600}>
                 {g.name}
+              </text>
+              <text x={W - PAD_R + 4} y={gy + 8} fontSize={8} fill="var(--color-warning)" textAnchor="start">
+                {formatCompact(g.target_amount)}
               </text>
             </g>
           );
@@ -254,9 +253,10 @@ export default function BalanceChart({ data, color, futureData, goals }: Balance
             {formatWeek(hovered.week_end)}
             {hoveredIsFuture && <span style={{ color: 'var(--color-text-muted)', fontWeight: 400 }}> (projected)</span>}
           </div>
-          <div>Balance: <strong>${hovered.balance.toFixed(2)}</strong></div>
+          <div>Prev week: ${(hovered.balance-hovered.credits+hovered.debits).toFixed(2)}</div>
           {hovered.credits > 0 && <div style={{ color: 'var(--color-success)' }}>+${hovered.credits.toFixed(2)} earned</div>}
           {hovered.debits > 0 && <div style={{ color: 'var(--color-danger)' }}>-${hovered.debits.toFixed(2)} spent</div>}
+          <div>Balance: <strong>${hovered.balance.toFixed(2)}</strong></div>
         </div>
       )}
     </div>

@@ -2,6 +2,7 @@ import { useState, useEffect, type FormEvent } from 'react';
 import type { Kid, Transaction, RecurringTransaction, SavingsGoal, GoalProjection, Pagination } from '../types';
 import * as api from '../api/client';
 import GoalCard from '../components/GoalCard';
+import BalanceChart from '../components/BalanceChart';
 
 export default function KidMoneyPage() {
   const [kid, setKid] = useState<Kid | null>(null);
@@ -11,6 +12,7 @@ export default function KidMoneyPage() {
   const [futureTransactions, setFutureTransactions] = useState<Transaction[]>([]);
   const [recurring, setRecurring] = useState<RecurringTransaction[]>([]);
   const [goals, setGoals] = useState<SavingsGoal[]>([]);
+  const [weeklyData, setWeeklyData] = useState<{ week_end: string; credits: number; debits: number; balance: number }[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -37,9 +39,10 @@ export default function KidMoneyPage() {
     try {
       const today = new Date().toISOString().split('T')[0];
       const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
-      const [dashData, futureTxRes] = await Promise.all([
+      const [dashData, futureTxRes, weeklyRes] = await Promise.all([
         api.getMyDashboard(),
         api.getMyTransactions({ from: tomorrow, per_page: 100 }),
+        api.getMyWeeklySummary(),
       ]);
       setKid(dashData.kid);
       // Dashboard returns all transactions; filter to past only (slice for MySQL datetime format)
@@ -50,6 +53,7 @@ export default function KidMoneyPage() {
       setFutureTransactions(futureTxRes.transactions);
       setRecurring(dashData.recurring);
       setGoals(dashData.goals);
+      setWeeklyData(weeklyRes.weeks);
       const projRes = await api.getGoalProjections(dashData.kid.id);
       setProjections(projRes.projections);
     } catch (err: unknown) {
@@ -409,6 +413,49 @@ export default function KidMoneyPage() {
         </div>
       )}
       </div>
+
+      {/* Balance Chart */}
+      {weeklyData.length >= 2 && (
+        <div className="card" style={{ marginBottom: '1.5rem' }}>
+          <h3 style={{ marginBottom: '0.5rem' }}>Balance Over Time</h3>
+          <BalanceChart
+            data={weeklyData}
+            color={kid?.color ?? '#4A90D9'}
+            futureData={(() => {
+              if (!futureTransactions.length) return undefined;
+              const lastBalance = weeklyData[weeklyData.length - 1]?.balance ?? (kid?.balance ?? 0);
+              const now = new Date();
+              const cutoff = new Date(now.getFullYear(), now.getMonth() + 1, now.getDate());
+              const sorted = [...futureTransactions].reverse();
+              const weekMap = new Map<string, { credits: number; debits: number }>();
+              for (const tx of sorted) {
+                const txDate = new Date(tx.transaction_date.slice(0, 10) + 'T00:00:00');
+                if (txDate > cutoff) continue;
+                const day = txDate.getDay();
+                const sun = new Date(txDate);
+                sun.setDate(sun.getDate() + (7 - day) % 7);
+                const weekEnd = sun.toISOString().split('T')[0];
+                const entry = weekMap.get(weekEnd) ?? { credits: 0, debits: 0 };
+                const amt = Number(tx.amount);
+                if (tx.type === 'credit') entry.credits += amt;
+                else entry.debits += amt;
+                weekMap.set(weekEnd, entry);
+              }
+              if (weekMap.size === 0) return undefined;
+              const weeks = [...weekMap.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+              let bal = lastBalance;
+              return weeks.map(([weekEnd, { credits, debits }]) => {
+                bal += credits - debits;
+                return { week_end: weekEnd, credits, debits, balance: bal };
+              });
+            })()}
+            goals={(() => {
+              const next = goals.find(g => g.target_amount && !g.is_completed);
+              return next ? [{ name: next.name, target_amount: next.target_amount! }] : [];
+            })()}
+          />
+        </div>
+      )}
 
       {/* Transactions - Two Column Layout */}
       <h2>Transactions</h2>

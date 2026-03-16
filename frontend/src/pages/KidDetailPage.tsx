@@ -809,9 +809,10 @@ export default function KidDetailPage() {
                 return { week_end: weekEnd, credits, debits, balance: bal };
               });
             })()}
-            goals={goals
-              .filter(g => g.target_amount && !g.is_completed)
-              .map(g => ({ name: g.name, target_amount: g.target_amount! }))}
+            goals={(() => {
+              const next = goals.find(g => g.target_amount && !g.is_completed);
+              return next ? [{ name: next.name, target_amount: next.target_amount! }] : [];
+            })()}
           />
         </div>
       )}

@@ -247,6 +247,11 @@ export function getMyTransactions(params?: { type?: string; category?: string; s
   return apiClient.get<{ transactions: Transaction[]; date_balances: Record<string, number>; pagination: Pagination }>(`/my/transactions${qs ? '?' + qs : ''}`);
 }
 
+export function getMyWeeklySummary(weeks?: number) {
+  const qs = weeks ? `?weeks=${weeks}` : '';
+  return apiClient.get<{ weeks: { week_end: string; credits: number; debits: number; balance: number }[] }>(`/my/weekly-summary${qs}`);
+}
+
 export function requestMoney(data: { amount: number; description: string; type?: string; category?: string }) {
   return apiClient.post<{ transaction: Transaction }>('/my/request', data);
 }

@@ -55,6 +55,18 @@ function registerKidPortalRoutes(Router $router, PDO $db): void
         Response::json($result);
     });
 
+    // GET /my/weekly-summary - kid's weekly balance summary for charting
+    $router->get('/my/weekly-summary', function (array $params) use ($db) {
+        $user = authenticate();
+        if (($user['role'] ?? 'parent') !== 'kid' || !$user['kid_id']) {
+            Response::error('This endpoint is for kid accounts only', 403);
+        }
+
+        $weeks = isset($_GET['weeks']) ? min((int) $_GET['weeks'], 104) : 26;
+        $summary = Transaction::getWeeklySummary($db, $user['kid_id'], $weeks);
+        Response::json(['weeks' => $summary]);
+    });
+
     // POST /my/request - kid requests a transaction from parent
     $router->post('/my/request', function (array $params) use ($db) {
         $user = authenticate();
