@@ -29,7 +29,7 @@ export default function RegisterPage() {
     <div className="auth-page">
       <div className="auth-card">
         <h1>Create Account</h1>
-        <p className="auth-subtitle">Start tracking your kids' allowances</p>
+        <p className="auth-subtitle">Start tracking your household</p>
         {error && <div className="error-message">{error}</div>}
         <form onSubmit={handleSubmit}>
           <div className="form-group">

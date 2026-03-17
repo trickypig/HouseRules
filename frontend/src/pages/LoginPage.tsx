@@ -28,7 +28,7 @@ export default function LoginPage() {
     <div className="auth-page">
       <div className="auth-card">
         <h1>Welcome Back</h1>
-        <p className="auth-subtitle">Sign in to manage your kids' allowances</p>
+        <p className="auth-subtitle">Sign in to manage your household</p>
         {error && <div className="error-message">{error}</div>}
         <form onSubmit={handleSubmit}>
           <div className="form-group">
