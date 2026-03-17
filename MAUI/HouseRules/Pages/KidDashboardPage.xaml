@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:pm="clr-namespace:HouseRules.PageModels"
+             xmlns:models="clr-namespace:HouseRules.Models"
+             xmlns:util="clr-namespace:HouseRules.Utilities"
+             x:Class="HouseRules.Pages.KidDashboardPage"
+             x:DataType="pm:KidDashboardPageModel"
+             Title="My Dashboard">
+
+    <ContentPage.Resources>
+        <util:CurrencyConverter x:Key="CurrencyConverter" />
+        <util:DateDisplayConverter x:Key="DateDisplayConverter" />
+        <util:BalanceColorConverter x:Key="BalanceColorConverter" />
+    </ContentPage.Resources>
+
+    <RefreshView Command="{Binding LoadDataCommand}" IsRefreshing="{Binding IsRefreshing}">
+        <ScrollView>
+            <VerticalStackLayout Spacing="15" Padding="{StaticResource LayoutPadding}">
+
+                <!-- Balance Card with Kid Name -->
+                <Border Style="{StaticResource CardStyle}">
+                    <VerticalStackLayout Spacing="5" HorizontalOptions="Center">
+                        <Label Text="{Binding Kid.Name}" Style="{StaticResource Title2}" HorizontalTextAlignment="Center" />
+                        <Label Text="{Binding Kid.Balance, Converter={StaticResource CurrencyConverter}}"
+                               Style="{StaticResource Display}" HorizontalTextAlignment="Center"
+                               TextColor="{Binding Kid.Balance, Converter={StaticResource BalanceColorConverter}}" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Request Buttons -->
+                <HorizontalStackLayout Spacing="10" HorizontalOptions="Center">
+                    <Button Text="I Spent Money" Command="{Binding ToggleRequestTypeCommand}" CommandParameter="spending"
+                            BackgroundColor="{StaticResource Primary}" />
+                    <Button Text="I Got a Gift" Command="{Binding ToggleRequestTypeCommand}" CommandParameter="gift"
+                            BackgroundColor="{StaticResource Primary}" />
+                    <Button Text="I Did a Chore" Command="{Binding ToggleRequestTypeCommand}" CommandParameter="chore"
+                            BackgroundColor="{StaticResource Primary}" />
+                </HorizontalStackLayout>
+
+                <!-- Request Form -->
+                <Border Style="{StaticResource CardStyle}" IsVisible="{Binding ActiveRequestType, Converter={StaticResource IsNotNullConverter}}">
+                    <VerticalStackLayout Spacing="10">
+                        <Entry Placeholder="Amount" Text="{Binding RequestAmountText}" Keyboard="Numeric" />
+                        <Entry Placeholder="What for?" Text="{Binding RequestDescription}" />
+                        <Button Text="Send Request" Command="{Binding SubmitRequestCommand}" />
+                        <Label Text="{Binding SuccessMessage}" TextColor="{StaticResource NeonSuccess}"
+                               IsVisible="{Binding SuccessMessage, Converter={StaticResource IsNotNullConverter}}"
+                               HorizontalTextAlignment="Center" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Chores Section -->
+                <!-- Overdue Chores (only shown if there are any) -->
+                <Label Text="Overdue Chores" Style="{StaticResource Title2}" TextColor="{StaticResource NeonDanger}"
+                       IsVisible="{Binding OverdueChores.Count, Converter={StaticResource IsNotNullConverter}}" />
+                <CollectionView ItemsSource="{Binding OverdueChores}" SelectionMode="None">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="models:ChoreInstance">
+                            <Border Style="{StaticResource CardStyle}" Padding="10,8" StrokeShape="RoundRectangle 10" Margin="0,0,0,5">
+                                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                                    <VerticalStackLayout>
+                                        <Label Text="{Binding Title}" Style="{StaticResource Body1Strong}" />
+                                        <Label Text="{Binding DueDate, Converter={StaticResource DateDisplayConverter}, StringFormat='Due: {0}'}"
+                                               Style="{StaticResource Caption1}" TextColor="{StaticResource NeonDanger}" />
+                                    </VerticalStackLayout>
+                                    <Label Grid.Column="1" Text="{Binding Amount, Converter={StaticResource CurrencyConverter}}"
+                                           Style="{StaticResource Body2}" VerticalOptions="Center" />
+                                    <Label Grid.Column="2" Text="Missed" TextColor="{StaticResource NeonDanger}" Style="{StaticResource Caption1Strong}" VerticalOptions="Center" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+
+                <!-- Savings Goals -->
+                <Grid ColumnDefinitions="*,Auto">
+                    <Label Text="Savings Goals" Style="{StaticResource Title2}" />
+                    <Button Grid.Column="1" Text="+ Add Goal" Command="{Binding ToggleAddGoalCommand}" Padding="10,5" />
+                </Grid>
+
+                <Border Style="{StaticResource CardStyle}" IsVisible="{Binding ShowAddGoal}">
+                    <VerticalStackLayout Spacing="10">
+                        <Entry Placeholder="Goal Name" Text="{Binding GoalName}" />
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                            <Entry Placeholder="Target Amount" Text="{Binding GoalTargetText}" Keyboard="Numeric" />
+                            <DatePicker Grid.Column="1" Date="{Binding GoalWantByDate}" />
+                        </Grid>
+                        <HorizontalStackLayout Spacing="10">
+                            <Button Text="Create Goal" Command="{Binding SubmitGoalCommand}" />
+                            <Button Text="Cancel" Command="{Binding ToggleAddGoalCommand}"
+                                    BackgroundColor="Transparent" TextColor="{StaticResource Primary}" />
+                        </HorizontalStackLayout>
+                    </VerticalStackLayout>
+                </Border>
+
+                <CollectionView ItemsSource="{Binding Goals}" SelectionMode="None">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="models:SavingsGoal">
+                            <Border Style="{StaticResource CardStyle}" Margin="0,0,0,5">
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                    <VerticalStackLayout Spacing="5">
+                                        <Label Text="{Binding Name}" Style="{StaticResource Body1Strong}" />
+                                        <Label Style="{StaticResource Body2}">
+                                            <Label.FormattedText>
+                                                <FormattedString>
+                                                    <Span Text="{Binding CurrentAmount, Converter={StaticResource CurrencyConverter}}" />
+                                                    <Span Text=" / " />
+                                                    <Span Text="{Binding TargetAmount, Converter={StaticResource CurrencyConverter}}" />
+                                                </FormattedString>
+                                            </Label.FormattedText>
+                                        </Label>
+                                        <ProgressBar Progress="{Binding CurrentAmount}" ProgressColor="{StaticResource Primary}" />
+                                    </VerticalStackLayout>
+                                    <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="2">
+                                        <Button Text="^"
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type pm:KidDashboardPageModel}}, Path=MoveGoalUpCommand}"
+                                                CommandParameter="{Binding}" BackgroundColor="Transparent" TextColor="{StaticResource Primary}" Padding="5" WidthRequest="36" HeightRequest="32" />
+                                        <Button Text="X"
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type pm:KidDashboardPageModel}}, Path=DeleteGoalCommand}"
+                                                CommandParameter="{Binding}" BackgroundColor="Transparent" TextColor="{StaticResource NeonDanger}" Padding="5" WidthRequest="36" HeightRequest="32" />
+                                        <Button Text="v"
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type pm:KidDashboardPageModel}}, Path=MoveGoalDownCommand}"
+                                                CommandParameter="{Binding}" BackgroundColor="Transparent" TextColor="{StaticResource Primary}" Padding="5" WidthRequest="36" HeightRequest="32" />
+                                    </VerticalStackLayout>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                    <CollectionView.EmptyView>
+                        <Label Text="No savings goals yet. Add one above!" Style="{StaticResource Body1}" Opacity="0.5" Margin="0,5" />
+                    </CollectionView.EmptyView>
+                </CollectionView>
+
+                <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+            </VerticalStackLayout>
+        </ScrollView>
+    </RefreshView>
+</ContentPage>

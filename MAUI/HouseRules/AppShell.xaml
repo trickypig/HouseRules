@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Shell
+    x:Class="HouseRules.AppShell"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:sf="clr-namespace:Syncfusion.Maui.Toolkit.SegmentedControl;assembly=Syncfusion.Maui.Toolkit"
+    xmlns:pages="clr-namespace:HouseRules.Pages"
+    Shell.FlyoutBehavior="Disabled"
+    Title="House Rules">
+
+    <!-- Login (no tabs) -->
+    <ShellContent
+        Route="login"
+        ContentTemplate="{DataTemplate pages:LoginPage}"
+        Shell.TabBarIsVisible="False"
+        Shell.NavBarIsVisible="False" />
+
+    <!-- Parent Tabs -->
+    <TabBar x:Name="ParentTabs" Route="parent">
+        <ShellContent Title="Dashboard" Route="parent-dashboard"
+                      Icon="{StaticResource IconDashboard}"
+                      ContentTemplate="{DataTemplate pages:DashboardPage}" />
+        <ShellContent Title="Money" Route="parent-money"
+                      Icon="{StaticResource IconMoney}"
+                      ContentTemplate="{DataTemplate pages:MoneyPage}" />
+        <ShellContent Title="Chores" Route="parent-chores"
+                      Icon="{StaticResource IconChores}"
+                      ContentTemplate="{DataTemplate pages:ChoreBoardPage}" />
+        <ShellContent Title="Shopping" Route="parent-shopping"
+                      Icon="{StaticResource IconShopping}"
+                      ContentTemplate="{DataTemplate pages:ShoppingListsPage}" />
+        <ShellContent Title="Settings" Route="parent-settings"
+                      Icon="{StaticResource IconSettings}"
+                      ContentTemplate="{DataTemplate pages:SettingsPage}" />
+    </TabBar>
+
+    <!-- Kid Tabs -->
+    <TabBar x:Name="KidTabs" Route="kid">
+        <ShellContent Title="Dashboard" Route="kid-dashboard"
+                      Icon="{StaticResource IconDashboard}"
+                      ContentTemplate="{DataTemplate pages:KidDashboardPage}" />
+        <ShellContent Title="My Money" Route="kid-money"
+                      Icon="{StaticResource IconMoney}"
+                      ContentTemplate="{DataTemplate pages:KidMoneyPage}" />
+        <ShellContent Title="Chores" Route="kid-chores"
+                      Icon="{StaticResource IconChores}"
+                      ContentTemplate="{DataTemplate pages:KidChoresPage}" />
+        <ShellContent Title="Shopping" Route="kid-shopping"
+                      Icon="{StaticResource IconShopping}"
+                      ContentTemplate="{DataTemplate pages:ShoppingListsPage}" />
+        <ShellContent Title="Settings" Route="kid-settings"
+                      Icon="{StaticResource IconSettings}"
+                      ContentTemplate="{DataTemplate pages:SettingsPage}" />
+    </TabBar>
+
+</Shell>

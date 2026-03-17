@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:pm="clr-namespace:HouseRules.PageModels"
+             xmlns:models="clr-namespace:HouseRules.Models"
+             xmlns:util="clr-namespace:HouseRules.Utilities"
+             x:Class="HouseRules.Pages.ShoppingListDetailPage"
+             x:DataType="pm:ShoppingListDetailPageModel"
+             Title="{Binding PageTitle}">
+
+    <ContentPage.Resources>
+        <util:DateDisplayConverter x:Key="DateDisplayConverter" />
+    </ContentPage.Resources>
+
+    <RefreshView Command="{Binding LoadDataCommand}" IsRefreshing="{Binding IsRefreshing}">
+        <ScrollView>
+            <VerticalStackLayout Spacing="15" Padding="{StaticResource LayoutPadding}">
+
+                <!-- Header -->
+                <VerticalStackLayout Spacing="2">
+                    <Label Text="&#x2190; All Lists" TextColor="{StaticResource Primary}">
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding GoBackCommand}" />
+                        </Label.GestureRecognizers>
+                    </Label>
+                    <Label Text="{Binding PageTitle}" Style="{StaticResource Title1}" />
+                </VerticalStackLayout>
+
+                <!-- Add Item Form -->
+                <Border Style="{StaticResource CardStyle}">
+                    <VerticalStackLayout Spacing="10">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                            <VerticalStackLayout>
+                                <Entry Placeholder="What do you need?" Text="{Binding NewItemText}"
+                                       ReturnType="Done" ReturnCommand="{Binding AddItemCommand}" />
+                                <!-- Autocomplete suggestions -->
+                                <CollectionView ItemsSource="{Binding Suggestions}" SelectionMode="None"
+                                                IsVisible="{Binding ShowSuggestions}">
+                                    <CollectionView.ItemTemplate>
+                                        <DataTemplate x:DataType="x:String">
+                                            <Border BackgroundColor="{AppThemeBinding Light={StaticResource Gray100}, Dark={StaticResource Gray900}}"
+                                                    Padding="10,8" Margin="0,1">
+                                                <Border.GestureRecognizers>
+                                                    <TapGestureRecognizer
+                                                        Command="{Binding Source={RelativeSource AncestorType={x:Type pm:ShoppingListDetailPageModel}}, Path=SelectSuggestionCommand}"
+                                                        CommandParameter="{Binding}" />
+                                                </Border.GestureRecognizers>
+                                                <Label Text="{Binding}" Style="{StaticResource Body1}" />
+                                            </Border>
+                                        </DataTemplate>
+                                    </CollectionView.ItemTemplate>
+                                </CollectionView>
+                            </VerticalStackLayout>
+                            <Button Grid.Column="1" Text="Add" Command="{Binding AddItemCommand}" VerticalOptions="Start" />
+                        </Grid>
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                            <Entry Placeholder="Qty (e.g. 2 lbs)" Text="{Binding NewItemQuantity}" />
+                            <Entry Grid.Column="1" Placeholder="Notes (optional)" Text="{Binding NewItemNotes}" />
+                        </Grid>
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- To Buy -->
+                <Label Style="{StaticResource Title2}">
+                    <Label.FormattedText>
+                        <FormattedString>
+                            <Span Text="To Buy (" />
+                            <Span Text="{Binding UnpurchasedItems.Count}" />
+                            <Span Text=")" />
+                        </FormattedString>
+                    </Label.FormattedText>
+                </Label>
+                <CollectionView ItemsSource="{Binding UnpurchasedItems}" SelectionMode="None">
+                    <CollectionView.ItemsLayout>
+                        <LinearItemsLayout Orientation="Vertical" ItemSpacing="8" />
+                    </CollectionView.ItemsLayout>
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="models:ShoppingListItem">
+                            <SwipeView>
+                                <SwipeView.RightItems>
+                                    <SwipeItems>
+                                        <SwipeItem Text="Delete" BackgroundColor="{StaticResource NeonDanger}"
+                                                   Command="{Binding Source={RelativeSource AncestorType={x:Type pm:ShoppingListDetailPageModel}}, Path=DeleteItemCommand}"
+                                                   CommandParameter="{Binding}" />
+                                    </SwipeItems>
+                                </SwipeView.RightItems>
+                                <Border Style="{StaticResource CardStyle}" Padding="8,4" StrokeShape="RoundRectangle 10" Margin="0,0,0,8">
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type pm:ShoppingListDetailPageModel}}, Path=ToggleItemCommand}"
+                                                              CommandParameter="{Binding}" />
+                                    </Border.GestureRecognizers>
+                                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                                        <CheckBox IsChecked="False" InputTransparent="True" />
+                                        <VerticalStackLayout Grid.Column="1" Spacing="1">
+                                            <HorizontalStackLayout Spacing="5">
+                                                <Label Text="{Binding Description}" Style="{StaticResource Body1Strong}" />
+                                                <Label Text="{Binding Quantity, StringFormat='({0})'}" Style="{StaticResource Caption1}" Opacity="0.9"
+                                                       VerticalOptions="Center"
+                                                       IsVisible="{Binding Quantity, Converter={StaticResource IsNotEmptyConverter}}" />
+                                            </HorizontalStackLayout>
+                                            <Label Text="{Binding Notes}" Style="{StaticResource Caption1}" Opacity="0.9"
+                                                   IsVisible="{Binding Notes, Converter={StaticResource IsNotEmptyConverter}}" />
+                                            <Label Style="{StaticResource Caption2}" Opacity="0.8">
+                                                <Label.FormattedText>
+                                                    <FormattedString>
+                                                        <Span Text="{Binding AddedByName}" />
+                                                        <Span Text=" · Added " />
+                                                        <Span Text="{Binding CreatedAt, Converter={StaticResource DateDisplayConverter}}" />
+                                                    </FormattedString>
+                                                </Label.FormattedText>
+                                            </Label>
+                                        </VerticalStackLayout>
+                                    </Grid>
+                                </Border>
+                            </SwipeView>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                    <CollectionView.EmptyView>
+                        <Label Text="All done! Nothing left to buy." Style="{StaticResource Body1}" Opacity="0.5"
+                               HorizontalOptions="Center" Margin="0,10" />
+                    </CollectionView.EmptyView>
+                </CollectionView>
+
+                <!-- Purchased -->
+                <Label Style="{StaticResource Title2}"
+                       IsVisible="{Binding PurchasedItems.Count, Converter={StaticResource IsNotNullConverter}}">
+                    <Label.FormattedText>
+                        <FormattedString>
+                            <Span Text="Purchased (" />
+                            <Span Text="{Binding PurchasedItems.Count}" />
+                            <Span Text=")" />
+                        </FormattedString>
+                    </Label.FormattedText>
+                </Label>
+                <CollectionView ItemsSource="{Binding PurchasedItems}" SelectionMode="None">
+                    <CollectionView.ItemsLayout>
+                        <LinearItemsLayout Orientation="Vertical" ItemSpacing="8" />
+                    </CollectionView.ItemsLayout>
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="models:ShoppingListItem">
+                            <SwipeView>
+                                <SwipeView.RightItems>
+                                    <SwipeItems>
+                                        <SwipeItem Text="Delete" BackgroundColor="{StaticResource NeonDanger}"
+                                                   Command="{Binding Source={RelativeSource AncestorType={x:Type pm:ShoppingListDetailPageModel}}, Path=DeleteItemCommand}"
+                                                   CommandParameter="{Binding}" />
+                                    </SwipeItems>
+                                </SwipeView.RightItems>
+                                <Border Style="{StaticResource CardStyle}" Padding="8,4" StrokeShape="RoundRectangle 10" Margin="0,0,0,8" Opacity="0.7">
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type pm:ShoppingListDetailPageModel}}, Path=ToggleItemCommand}"
+                                                              CommandParameter="{Binding}" />
+                                    </Border.GestureRecognizers>
+                                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                                        <CheckBox IsChecked="True" InputTransparent="True" />
+                                        <VerticalStackLayout Grid.Column="1" Spacing="1">
+                                            <Label Text="{Binding Description}" Style="{StaticResource Body1}" TextDecorations="Strikethrough" />
+                                            <Label Style="{StaticResource Caption2}" Opacity="0.8">
+                                                <Label.FormattedText>
+                                                    <FormattedString>
+                                                        <Span Text="{Binding AddedByName}" />
+                                                        <Span Text=" · Purchased " />
+                                                        <Span Text="{Binding PurchasedAt, Converter={StaticResource DateDisplayConverter}}" />
+                                                    </FormattedString>
+                                                </Label.FormattedText>
+                                            </Label>
+                                        </VerticalStackLayout>
+                                    </Grid>
+                                </Border>
+                            </SwipeView>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+
+                <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+            </VerticalStackLayout>
+        </ScrollView>
+    </RefreshView>
+</ContentPage>

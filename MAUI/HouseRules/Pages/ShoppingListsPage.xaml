@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:pm="clr-namespace:HouseRules.PageModels"
+             xmlns:models="clr-namespace:HouseRules.Models"
+             x:Class="HouseRules.Pages.ShoppingListsPage"
+             x:DataType="pm:ShoppingListsPageModel"
+             Title="Shopping">
+
+    <RefreshView Command="{Binding LoadDataCommand}" IsRefreshing="{Binding IsRefreshing}">
+        <Grid RowDefinitions="*,Auto" Padding="{StaticResource LayoutPadding}">
+            <CollectionView ItemsSource="{Binding Lists}" SelectionMode="None">
+                <CollectionView.Header>
+                    <Label Text="Shopping Lists" Style="{StaticResource Title1}" Margin="0,0,0,15" />
+                </CollectionView.Header>
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="models:ShoppingList">
+                        <Border Style="{StaticResource CardStyle}" Margin="0,0,0,10">
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type pm:ShoppingListsPageModel}}, Path=NavigateToDetailCommand}"
+                                                      CommandParameter="{Binding}" />
+                            </Border.GestureRecognizers>
+                            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
+                                <VerticalStackLayout>
+                                    <Label Text="{Binding Name}" Style="{StaticResource Body1Strong}" />
+                                    <Label Style="{StaticResource Caption1}" Opacity="0.9">
+                                        <Label.FormattedText>
+                                            <FormattedString>
+                                                <Span Text="{Binding UnpurchasedCount}" />
+                                                <Span Text=" items remaining" />
+                                            </FormattedString>
+                                        </Label.FormattedText>
+                                    </Label>
+                                </VerticalStackLayout>
+                                <Label Grid.Column="1" Text=">" Style="{StaticResource Body1}" VerticalOptions="Center" Opacity="0.6" />
+                                <Button Grid.Column="2" Text="&#x1F5D1;"
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type pm:ShoppingListsPageModel}}, Path=DeleteListCommand}"
+                                        CommandParameter="{Binding}" BackgroundColor="Transparent"
+                                        TextColor="{StaticResource NeonDanger}" Padding="5" />
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+                <CollectionView.EmptyView>
+                    <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center">
+                        <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+                        <Label Text="No shopping lists" IsVisible="{Binding IsBusy, Converter={StaticResource InvertedBoolConverter}}"
+                               Style="{StaticResource Body1}" Opacity="0.5" />
+                    </VerticalStackLayout>
+                </CollectionView.EmptyView>
+            </CollectionView>
+
+            <Button Grid.Row="1" Text="+ New List" Command="{Binding CreateListCommand}" Margin="0,10" />
+        </Grid>
+    </RefreshView>
+</ContentPage>

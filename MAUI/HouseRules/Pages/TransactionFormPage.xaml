@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:pm="clr-namespace:HouseRules.PageModels"
+             x:Class="HouseRules.Pages.TransactionFormPage"
+             x:DataType="pm:TransactionFormPageModel"
+             Title="{Binding IsEditing, StringFormat='{}{0:Edit Transaction;Add Transaction}'}">
+
+    <ScrollView>
+        <VerticalStackLayout Spacing="15" Padding="30" MaximumWidthRequest="500">
+
+            <Label Text="Type" Style="{StaticResource Body1Strong}" />
+            <Picker ItemsSource="{Binding Types}" SelectedItem="{Binding Type}" />
+
+            <Label Text="Amount" Style="{StaticResource Body1Strong}" />
+            <Entry Placeholder="0.00" Text="{Binding AmountText}" Keyboard="Numeric" />
+
+            <Label Text="Category" Style="{StaticResource Body1Strong}" />
+            <Entry Placeholder="e.g. allowance, spending" Text="{Binding Category}" />
+
+            <Label Text="Description" Style="{StaticResource Body1Strong}" />
+            <Entry Placeholder="Description" Text="{Binding Description}" />
+
+            <Label Text="Date" Style="{StaticResource Body1Strong}" />
+            <DatePicker Date="{Binding TransactionDate}" />
+
+            <Label Text="{Binding ErrorMessage}" TextColor="{StaticResource NeonDanger}"
+                   IsVisible="{Binding ErrorMessage, Converter={StaticResource IsNotNullConverter}}" />
+
+            <HorizontalStackLayout Spacing="10" HorizontalOptions="End">
+                <Button Text="Cancel" Command="{Binding CancelCommand}"
+                        BackgroundColor="Transparent" TextColor="{StaticResource Primary}" />
+                <Button Text="Save" Command="{Binding SaveCommand}"
+                        IsEnabled="{Binding IsBusy, Converter={StaticResource InvertedBoolConverter}}" />
+            </HorizontalStackLayout>
+
+            <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

@@ -1,0 +1,345 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:pm="clr-namespace:HouseRules.PageModels"
+             xmlns:models="clr-namespace:HouseRules.Models"
+             xmlns:util="clr-namespace:HouseRules.Utilities"
+             xmlns:chart="clr-namespace:Syncfusion.Maui.Toolkit.Charts;assembly=Syncfusion.Maui.Toolkit"
+             x:Class="HouseRules.Pages.KidDetailPage"
+             x:DataType="pm:KidDetailPageModel"
+             Title="{Binding Kid.Name}">
+
+    <ContentPage.Resources>
+        <util:CurrencyConverter x:Key="CurrencyConverter" />
+        <util:DateDisplayConverter x:Key="DateDisplayConverter" />
+        <util:ColorConverter x:Key="ColorConverter" />
+        <util:BalanceColorConverter x:Key="BalanceColorConverter" />
+    </ContentPage.Resources>
+
+    <RefreshView Command="{Binding LoadDataCommand}" IsRefreshing="{Binding IsRefreshing}">
+        <ScrollView>
+            <VerticalStackLayout Spacing="15" Padding="{StaticResource LayoutPadding}">
+
+                <!-- Kid Header Card -->
+                <Border Style="{StaticResource CardStyle}">
+                    <!-- View mode -->
+                    <Grid IsVisible="{Binding IsEditingKid, Converter={StaticResource InvertedBoolConverter}}">
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="15">
+                            <Border StrokeShape="RoundRectangle 25" WidthRequest="50" HeightRequest="50"
+                                    BackgroundColor="{Binding Kid.Color, Converter={StaticResource ColorConverter}}">
+                                <Label Text="{Binding Kid.Avatar}" FontSize="24" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
+                            </Border>
+                            <VerticalStackLayout Grid.Column="1" VerticalOptions="Center">
+                                <Label Text="{Binding Kid.Name}" Style="{StaticResource Title2}" />
+                                <Label Text="{Binding Kid.Balance, Converter={StaticResource CurrencyConverter}}"
+                                       Style="{StaticResource Title3}"
+                                       TextColor="{Binding Kid.Balance, Converter={StaticResource BalanceColorConverter}}" />
+                            </VerticalStackLayout>
+                            <Button Grid.Column="2" Text="Edit" Command="{Binding StartEditKidCommand}"
+                                    BackgroundColor="Transparent" TextColor="{StaticResource Primary}" VerticalOptions="Center" />
+                        </Grid>
+                    </Grid>
+                </Border>
+
+                <!-- Kid Edit Form -->
+                <Border Style="{StaticResource CardStyle}" IsVisible="{Binding IsEditingKid}">
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="Edit Kid" Style="{StaticResource Title3}" />
+                        <Entry Placeholder="Name" Text="{Binding EditKidName}" />
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                            <VerticalStackLayout>
+                                <Label Text="Color" Style="{StaticResource Caption1}" />
+                                <Entry Text="{Binding EditKidColor}" Placeholder="#hex" />
+                            </VerticalStackLayout>
+                            <VerticalStackLayout Grid.Column="1">
+                                <Label Text="Avatar Emoji" Style="{StaticResource Caption1}" />
+                                <Entry Text="{Binding EditKidAvatar}" Placeholder="emoji" />
+                            </VerticalStackLayout>
+                        </Grid>
+                        <HorizontalStackLayout Spacing="10">
+                            <Button Text="Save" Command="{Binding SaveKidCommand}" />
+                            <Button Text="Cancel" Command="{Binding CancelEditKidCommand}"
+                                    BackgroundColor="Transparent" TextColor="{StaticResource Primary}" />
+                            <Button Text="Delete Kid" Command="{Binding DeleteKidCommand}"
+                                    BackgroundColor="{StaticResource NeonDanger}" HorizontalOptions="End" />
+                        </HorizontalStackLayout>
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Kid Login Section -->
+                <Border Style="{StaticResource CardStyle}">
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="Kid Login" Style="{StaticResource Title3}" />
+                        <!-- Has login -->
+                        <Grid IsVisible="{Binding KidLogin, Converter={StaticResource IsNotNullConverter}}"
+                              ColumnDefinitions="*,Auto">
+                            <Label Text="{Binding KidLogin.Email}" Style="{StaticResource Body1}" VerticalOptions="Center" />
+                            <Button Grid.Column="1" Text="Remove" Command="{Binding RemoveKidLoginCommand}"
+                                    BackgroundColor="{StaticResource NeonDanger}" Padding="10,5" />
+                        </Grid>
+                        <!-- No login -->
+                        <VerticalStackLayout IsVisible="{Binding KidLogin, Converter={StaticResource IsNotNullConverter}, ConverterParameter=invert}">
+                            <Button Text="Create Kid Login" Command="{Binding ToggleKidLoginFormCommand}"
+                                    IsVisible="{Binding ShowKidLoginForm, Converter={StaticResource InvertedBoolConverter}}" />
+                            <VerticalStackLayout IsVisible="{Binding ShowKidLoginForm}" Spacing="8">
+                                <Entry Placeholder="Email" Text="{Binding KidLoginEmail}" Keyboard="Email" />
+                                <Entry Placeholder="Password (min 4 chars)" Text="{Binding KidLoginPassword}" IsPassword="True" />
+                                <HorizontalStackLayout Spacing="10">
+                                    <Button Text="Create Login" Command="{Binding CreateKidLoginCommand}" />
+                                    <Button Text="Cancel" Command="{Binding ToggleKidLoginFormCommand}"
+                                            BackgroundColor="Transparent" TextColor="{StaticResource Primary}" />
+                                </HorizontalStackLayout>
+                            </VerticalStackLayout>
+                        </VerticalStackLayout>
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Balance Chart -->
+                <Border Style="{StaticResource CardStyle}" IsVisible="{Binding WeeklySummary.Count, Converter={StaticResource IsNotNullConverter}}">
+                    <VerticalStackLayout>
+                        <Label Text="Balance Over Time" Style="{StaticResource Title3}" Margin="0,0,0,10" />
+                        <chart:SfCartesianChart HeightRequest="200">
+                            <chart:SfCartesianChart.XAxes>
+                                <chart:CategoryAxis LabelPlacement="BetweenTicks" IsVisible="False" />
+                            </chart:SfCartesianChart.XAxes>
+                            <chart:SfCartesianChart.YAxes>
+                                <chart:NumericalAxis />
+                            </chart:SfCartesianChart.YAxes>
+                            <chart:LineSeries ItemsSource="{Binding WeeklySummary}"
+                                              XBindingPath="WeekEnd" YBindingPath="Balance" StrokeWidth="2" />
+                        </chart:SfCartesianChart>
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Recurring Transactions -->
+                <Grid ColumnDefinitions="*,Auto">
+                    <Label Text="Recurring Transactions" Style="{StaticResource Title2}" />
+                    <Button Grid.Column="1" Text="+ Add" Command="{Binding ToggleAddRecurringCommand}" Padding="10,5" />
+                </Grid>
+
+                <!-- Add Recurring Form -->
+                <Border Style="{StaticResource CardStyle}" IsVisible="{Binding ShowAddRecurring}">
+                    <VerticalStackLayout Spacing="10">
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                            <VerticalStackLayout>
+                                <Label Text="Type" Style="{StaticResource Caption1}" />
+                                <Picker ItemsSource="{Binding Types}" SelectedItem="{Binding RecType}" />
+                            </VerticalStackLayout>
+                            <VerticalStackLayout Grid.Column="1">
+                                <Label Text="Category" Style="{StaticResource Caption1}" />
+                                <Picker ItemsSource="{Binding Categories}" SelectedItem="{Binding RecCategory}" />
+                            </VerticalStackLayout>
+                        </Grid>
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                            <VerticalStackLayout>
+                                <Label Text="Amount" Style="{StaticResource Caption1}" />
+                                <Entry Placeholder="0.00" Text="{Binding RecAmountText}" Keyboard="Numeric" />
+                            </VerticalStackLayout>
+                            <VerticalStackLayout Grid.Column="1">
+                                <Label Text="Frequency" Style="{StaticResource Caption1}" />
+                                <Picker ItemsSource="{Binding Frequencies}" SelectedItem="{Binding RecFrequency}" />
+                            </VerticalStackLayout>
+                        </Grid>
+                        <Entry Placeholder="Description" Text="{Binding RecDescription}" />
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                            <VerticalStackLayout>
+                                <Label Text="Day of Week" Style="{StaticResource Caption1}" />
+                                <Picker ItemsSource="{Binding DaysOfWeek}" SelectedIndex="{Binding RecDayOfWeek}" />
+                            </VerticalStackLayout>
+                            <VerticalStackLayout Grid.Column="1">
+                                <Label Text="Start Date" Style="{StaticResource Caption1}" />
+                                <DatePicker Date="{Binding RecStartDate}" />
+                            </VerticalStackLayout>
+                        </Grid>
+                        <HorizontalStackLayout Spacing="10">
+                            <Button Text="Create" Command="{Binding SubmitRecurringCommand}" />
+                            <Button Text="Cancel" Command="{Binding ToggleAddRecurringCommand}"
+                                    BackgroundColor="Transparent" TextColor="{StaticResource Primary}" />
+                        </HorizontalStackLayout>
+                    </VerticalStackLayout>
+                </Border>
+
+                <CollectionView ItemsSource="{Binding RecurringTransactions}" SelectionMode="None">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="models:RecurringTransaction">
+                            <Border Style="{StaticResource CardStyle}" Margin="0,0,0,5">
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                    <VerticalStackLayout Spacing="2">
+                                        <HorizontalStackLayout Spacing="8">
+                                            <Label Text="{Binding AmountDisplay}" Style="{StaticResource Body1Strong}" />
+                                            <Label Style="{StaticResource Caption1}" Opacity="0.9" VerticalOptions="Center">
+                                                <Label.FormattedText>
+                                                    <FormattedString>
+                                                        <Span Text="{Binding Category}" />
+                                                        <Span Text=" · " />
+                                                        <Span Text="{Binding Frequency}" />
+                                                    </FormattedString>
+                                                </Label.FormattedText>
+                                            </Label>
+                                            <Border BackgroundColor="{StaticResource Gray300}" Padding="4,1" StrokeThickness="0"
+                                                    StrokeShape="RoundRectangle 4"
+                                                    IsVisible="{Binding IsPaused}">
+                                                <Label Text="Paused" Style="{StaticResource Caption2}" TextColor="{StaticResource Gray500}" />
+                                            </Border>
+                                        </HorizontalStackLayout>
+                                        <Label Text="{Binding Description}" Style="{StaticResource Caption1}" Opacity="0.9"
+                                               IsVisible="{Binding Description, Converter={StaticResource IsNotEmptyConverter}}" />
+                                        <Label Text="{Binding StartDateDisplay}" Style="{StaticResource Caption2}" Opacity="0.8" />
+                                    </VerticalStackLayout>
+                                    <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="0">
+                                        <Button Text="{Binding ToggleIcon}"
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type pm:KidDetailPageModel}}, Path=ToggleRecurringActiveCommand}"
+                                                CommandParameter="{Binding}" BackgroundColor="Transparent" TextColor="{StaticResource Primary}"
+                                                Padding="4" WidthRequest="36" HeightRequest="32" />
+                                        <Button Text="X"
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type pm:KidDetailPageModel}}, Path=DeleteRecurringCommand}"
+                                                CommandParameter="{Binding}" BackgroundColor="Transparent" TextColor="{StaticResource NeonDanger}"
+                                                Padding="4" WidthRequest="36" HeightRequest="32" />
+                                    </VerticalStackLayout>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                    <CollectionView.EmptyView>
+                        <Label Text="No recurring transactions" Style="{StaticResource Caption1}" Opacity="0.5" Margin="0,5" />
+                    </CollectionView.EmptyView>
+                </CollectionView>
+
+                <!-- Savings Goals -->
+                <Grid ColumnDefinitions="*,Auto">
+                    <Label Text="Savings Goals" Style="{StaticResource Title2}" />
+                    <Button Grid.Column="1" Text="+ Add Goal" Command="{Binding ToggleAddGoalCommand}" Padding="10,5" />
+                </Grid>
+
+                <!-- Add Goal Form -->
+                <Border Style="{StaticResource CardStyle}" IsVisible="{Binding ShowAddGoal}">
+                    <VerticalStackLayout Spacing="10">
+                        <Entry Placeholder="Goal Name" Text="{Binding GoalName}" />
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                            <Entry Placeholder="Target Amount" Text="{Binding GoalTargetText}" Keyboard="Numeric" />
+                            <DatePicker Grid.Column="1" Date="{Binding GoalWantByDate}" />
+                        </Grid>
+                        <HorizontalStackLayout Spacing="10">
+                            <Button Text="Create Goal" Command="{Binding SubmitGoalCommand}" />
+                            <Button Text="Cancel" Command="{Binding ToggleAddGoalCommand}"
+                                    BackgroundColor="Transparent" TextColor="{StaticResource Primary}" />
+                        </HorizontalStackLayout>
+                    </VerticalStackLayout>
+                </Border>
+
+                <CollectionView ItemsSource="{Binding Goals}" SelectionMode="None">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="models:SavingsGoal">
+                            <Border Style="{StaticResource CardStyle}" Margin="0,0,0,5">
+                                <VerticalStackLayout Spacing="5">
+                                    <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="5">
+                                        <Label Text="{Binding Name}" Style="{StaticResource Body1Strong}" />
+                                        <Button Grid.Column="1" Text="^"
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type pm:KidDetailPageModel}}, Path=MoveGoalUpCommand}"
+                                                CommandParameter="{Binding}" BackgroundColor="Transparent" TextColor="{StaticResource Primary}" Padding="5" WidthRequest="36" />
+                                        <Button Grid.Column="2" Text="v"
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type pm:KidDetailPageModel}}, Path=MoveGoalDownCommand}"
+                                                CommandParameter="{Binding}" BackgroundColor="Transparent" TextColor="{StaticResource Primary}" Padding="5" WidthRequest="36" />
+                                        <Button Grid.Column="3" Text="X"
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type pm:KidDetailPageModel}}, Path=DeleteGoalCommand}"
+                                                CommandParameter="{Binding}" BackgroundColor="Transparent" TextColor="{StaticResource NeonDanger}" Padding="5" WidthRequest="36" />
+                                    </Grid>
+                                    <Label Style="{StaticResource Body2}">
+                                        <Label.FormattedText>
+                                            <FormattedString>
+                                                <Span Text="{Binding CurrentAmount, Converter={StaticResource CurrencyConverter}}" />
+                                                <Span Text=" / " />
+                                                <Span Text="{Binding TargetAmount, Converter={StaticResource CurrencyConverter}}" />
+                                            </FormattedString>
+                                        </Label.FormattedText>
+                                    </Label>
+                                    <ProgressBar Progress="{Binding CurrentAmount}" ProgressColor="{StaticResource Primary}" />
+                                    <Label Text="{Binding WantByDate, Converter={StaticResource DateDisplayConverter}, StringFormat='Want by: {0}'}"
+                                           Style="{StaticResource Caption1}" Opacity="0.7"
+                                           IsVisible="{Binding WantByDate, Converter={StaticResource IsNotNullConverter}}" />
+                                </VerticalStackLayout>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                    <CollectionView.EmptyView>
+                        <Label Text="No savings goals" Style="{StaticResource Caption1}" Opacity="0.5" Margin="0,5" />
+                    </CollectionView.EmptyView>
+                </CollectionView>
+
+                <!-- Transactions Header -->
+                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                    <Label Text="Transactions" Style="{StaticResource Title2}" />
+                    <Button Grid.Column="1" Text="Verify All" Command="{Binding VerifyAllPendingCommand}"
+                            BackgroundColor="{StaticResource NeonSuccess}" Padding="10,5" />
+                    <Button Grid.Column="2" Text="+ Add" Command="{Binding ToggleAddTransactionCommand}" Padding="10,5" />
+                </Grid>
+
+                <!-- Add Transaction Form -->
+                <Border Style="{StaticResource CardStyle}" IsVisible="{Binding ShowAddTransaction}">
+                    <VerticalStackLayout Spacing="10">
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                            <VerticalStackLayout>
+                                <Label Text="Type" Style="{StaticResource Caption1}" />
+                                <Picker ItemsSource="{Binding Types}" SelectedItem="{Binding TxType}" />
+                            </VerticalStackLayout>
+                            <VerticalStackLayout Grid.Column="1">
+                                <Label Text="Category" Style="{StaticResource Caption1}" />
+                                <Picker ItemsSource="{Binding Categories}" SelectedItem="{Binding TxCategory}" />
+                            </VerticalStackLayout>
+                        </Grid>
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                            <Entry Placeholder="Amount" Text="{Binding TxAmountText}" Keyboard="Numeric" />
+                            <DatePicker Grid.Column="1" Date="{Binding TxDate}" />
+                        </Grid>
+                        <Entry Placeholder="Description" Text="{Binding TxDescription}" />
+                        <HorizontalStackLayout Spacing="10">
+                            <Button Text="Add" Command="{Binding SubmitTransactionCommand}" />
+                            <Button Text="Cancel" Command="{Binding ToggleAddTransactionCommand}"
+                                    BackgroundColor="Transparent" TextColor="{StaticResource Primary}" />
+                        </HorizontalStackLayout>
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Transaction List -->
+                <CollectionView ItemsSource="{Binding Transactions}" SelectionMode="None"
+                                RemainingItemsThreshold="5"
+                                RemainingItemsThresholdReachedCommand="{Binding LoadMoreTransactionsCommand}">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="models:Transaction">
+                            <Border Style="{StaticResource CardStyle}" Margin="0,0,0,5">
+                                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                                    <VerticalStackLayout>
+                                        <Label Text="{Binding Description}" Style="{StaticResource Body1}" />
+                                        <Label Style="{StaticResource Caption1}" Opacity="0.7">
+                                            <Label.FormattedText>
+                                                <FormattedString>
+                                                    <Span Text="{Binding TransactionDate, Converter={StaticResource DateDisplayConverter}}" />
+                                                    <Span Text=" | " />
+                                                    <Span Text="{Binding Status}" />
+                                                    <Span Text=" | " />
+                                                    <Span Text="{Binding Category}" />
+                                                </FormattedString>
+                                            </Label.FormattedText>
+                                        </Label>
+                                    </VerticalStackLayout>
+                                    <Label Grid.Column="1" Text="{Binding Amount, Converter={StaticResource CurrencyConverter}}"
+                                           Style="{StaticResource Body1Strong}" VerticalOptions="Center" />
+                                    <HorizontalStackLayout Grid.Column="2" Spacing="3">
+                                        <Button Text="X"
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type pm:KidDetailPageModel}}, Path=DeleteTransactionCommand}"
+                                                CommandParameter="{Binding}" BackgroundColor="Transparent" TextColor="{StaticResource NeonDanger}" Padding="5" WidthRequest="36" />
+                                    </HorizontalStackLayout>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                    <CollectionView.Footer>
+                        <ActivityIndicator IsRunning="{Binding IsLoadingMore}" IsVisible="{Binding IsLoadingMore}" />
+                    </CollectionView.Footer>
+                </CollectionView>
+
+                <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+            </VerticalStackLayout>
+        </ScrollView>
+    </RefreshView>
+</ContentPage>

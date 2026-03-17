@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:pm="clr-namespace:HouseRules.PageModels"
+             xmlns:models="clr-namespace:HouseRules.Models"
+             xmlns:util="clr-namespace:HouseRules.Utilities"
+             x:Class="HouseRules.Pages.DashboardPage"
+             x:DataType="pm:DashboardPageModel"
+             Title="Dashboard">
+
+    <ContentPage.Resources>
+        <util:CurrencyConverter x:Key="CurrencyConverter" />
+        <util:ColorConverter x:Key="ColorConverter" />
+        <util:DateDisplayConverter x:Key="DateDisplayConverter" />
+    </ContentPage.Resources>
+
+    <RefreshView Command="{Binding LoadDataCommand}" IsRefreshing="{Binding IsRefreshing}">
+        <ScrollView>
+            <VerticalStackLayout Spacing="15" Padding="{StaticResource LayoutPadding}">
+
+                <!-- Header with Quick Transaction toggle -->
+                <Grid ColumnDefinitions="*,Auto">
+                    <Label Text="Dashboard" Style="{StaticResource Title1}" />
+                    <Button Grid.Column="1" Text="+ Quick Transaction" Command="{Binding ToggleQuickTransactionCommand}" />
+                </Grid>
+
+                <!-- Quick Transaction Form -->
+                <Border Style="{StaticResource CardStyle}" IsVisible="{Binding ShowQuickTransaction}">
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="Quick Transaction" Style="{StaticResource Title3}" />
+                        <Label Text="Kid" Style="{StaticResource Caption1}" />
+                        <Picker ItemsSource="{Binding Kids}" SelectedItem="{Binding SelectedKid}"
+                                ItemDisplayBinding="{Binding Name}" />
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                            <VerticalStackLayout>
+                                <Label Text="Type" Style="{StaticResource Caption1}" />
+                                <Picker ItemsSource="{Binding Types}" SelectedItem="{Binding TxType}" />
+                            </VerticalStackLayout>
+                            <VerticalStackLayout Grid.Column="1">
+                                <Label Text="Category" Style="{StaticResource Caption1}" />
+                                <Picker ItemsSource="{Binding Categories}" SelectedItem="{Binding TxCategory}" />
+                            </VerticalStackLayout>
+                        </Grid>
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                            <VerticalStackLayout>
+                                <Label Text="Amount" Style="{StaticResource Caption1}" />
+                                <Entry Placeholder="0.00" Text="{Binding TxAmountText}" Keyboard="Numeric" />
+                            </VerticalStackLayout>
+                            <VerticalStackLayout Grid.Column="1">
+                                <Label Text="Date" Style="{StaticResource Caption1}" />
+                                <DatePicker Date="{Binding TxDate}" />
+                            </VerticalStackLayout>
+                        </Grid>
+                        <Label Text="Description" Style="{StaticResource Caption1}" />
+                        <Entry Placeholder="Optional description" Text="{Binding TxDescription}" />
+                        <Button Text="Add" Command="{Binding SubmitQuickTransactionCommand}" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Kids -->
+                <Label Text="Kids" Style="{StaticResource Title2}" />
+                <CollectionView ItemsSource="{Binding Kids}" SelectionMode="None">
+                    <CollectionView.ItemsLayout>
+                        <LinearItemsLayout Orientation="Horizontal" ItemSpacing="10" />
+                    </CollectionView.ItemsLayout>
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="models:Kid">
+                            <Border Style="{StaticResource CardStyle}" WidthRequest="160">
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type pm:DashboardPageModel}}, Path=NavigateToKidCommand}"
+                                                          CommandParameter="{Binding}" />
+                                </Border.GestureRecognizers>
+                                <VerticalStackLayout Spacing="5">
+                                    <BoxView HeightRequest="4" Color="{Binding Color, Converter={StaticResource ColorConverter}}" CornerRadius="2" />
+                                    <Label Text="{Binding Name}" Style="{StaticResource Body1Strong}" />
+                                    <Label Text="{Binding Balance, Converter={StaticResource CurrencyConverter}}" Style="{StaticResource Title3}" />
+                                    <Label Text="{Binding PendingCount, StringFormat='{0} pending'}" Style="{StaticResource Caption2}"
+                                           TextColor="Orange" IsVisible="{Binding PendingCount, Converter={StaticResource IsNotNullConverter}}" />
+                                </VerticalStackLayout>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+
+                <!-- Needs Attention Header -->
+                <Label Text="Needs Attention" Style="{StaticResource Title2}"
+                       IsVisible="{Binding PendingTransactions.Count, Converter={StaticResource IsNotNullConverter}}" />
+
+                <!-- Pending Transactions -->
+                <Label Text="Pending Transactions" Style="{StaticResource Title3}"
+                       IsVisible="{Binding PendingTransactions.Count, Converter={StaticResource IsNotNullConverter}}" />
+                <CollectionView ItemsSource="{Binding PendingTransactions}" SelectionMode="None"
+                                IsVisible="{Binding PendingTransactions.Count, Converter={StaticResource IsNotNullConverter}}">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="models:Transaction">
+                            <Border Style="{StaticResource CardStyle}" Margin="0,0,0,5">
+                                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
+                                    <VerticalStackLayout>
+                                        <Label Style="{StaticResource Body1Strong}">
+                                            <Label.FormattedText>
+                                                <FormattedString>
+                                                    <Span Text="{Binding KidName}" />
+                                                    <Span Text=" - " />
+                                                    <Span Text="{Binding Description}" />
+                                                </FormattedString>
+                                            </Label.FormattedText>
+                                        </Label>
+                                        <Label Style="{StaticResource Caption1}" Opacity="0.7">
+                                            <Label.FormattedText>
+                                                <FormattedString>
+                                                    <Span Text="{Binding Status}" />
+                                                    <Span Text=" | " />
+                                                    <Span Text="{Binding TransactionDate, Converter={StaticResource DateDisplayConverter}}" />
+                                                </FormattedString>
+                                            </Label.FormattedText>
+                                        </Label>
+                                    </VerticalStackLayout>
+                                    <Label Grid.Column="1" Text="{Binding Amount, Converter={StaticResource CurrencyConverter}}"
+                                           Style="{StaticResource Body1Strong}" VerticalOptions="Center" />
+                                    <HorizontalStackLayout Grid.Column="2" Spacing="5">
+                                        <Button Text="Approve" Command="{Binding Source={RelativeSource AncestorType={x:Type pm:DashboardPageModel}}, Path=VerifyTransactionCommand}"
+                                                CommandParameter="{Binding}" BackgroundColor="{StaticResource NeonSuccess}" Padding="10,5" />
+                                        <Button Text="Deny" Command="{Binding Source={RelativeSource AncestorType={x:Type pm:DashboardPageModel}}, Path=CancelTransactionCommand}"
+                                                CommandParameter="{Binding}" BackgroundColor="{StaticResource NeonDanger}" Padding="10,5" />
+                                    </HorizontalStackLayout>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+
+                <!-- Awaiting Verification Chores -->
+                <Label Text="Chores - Awaiting Verification" Style="{StaticResource Title3}"
+                       IsVisible="{Binding CompletedChores.Count, Converter={StaticResource IsNotNullConverter}}" />
+                <CollectionView ItemsSource="{Binding CompletedChores}" SelectionMode="None"
+                                IsVisible="{Binding CompletedChores.Count, Converter={StaticResource IsNotNullConverter}}">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="models:ChoreInstance">
+                            <Border Style="{StaticResource CardStyle}" Margin="0,0,0,5">
+                                <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8">
+                                    <VerticalStackLayout>
+                                        <Label Text="{Binding Title}" Style="{StaticResource Body1Strong}" />
+                                        <Label Style="{StaticResource Caption1}" Opacity="0.7">
+                                            <Label.FormattedText>
+                                                <FormattedString>
+                                                    <Span Text="{Binding KidName}" />
+                                                    <Span Text=" | Due: " />
+                                                    <Span Text="{Binding DueDate, Converter={StaticResource DateDisplayConverter}}" />
+                                                </FormattedString>
+                                            </Label.FormattedText>
+                                        </Label>
+                                    </VerticalStackLayout>
+                                    <Label Grid.Column="1" Text="{Binding Amount, Converter={StaticResource CurrencyConverter}}"
+                                           Style="{StaticResource Body2}" VerticalOptions="Center" />
+                                    <Button Grid.Column="2" Text="Verify"
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type pm:DashboardPageModel}}, Path=VerifyChoreCommand}"
+                                            CommandParameter="{Binding}" BackgroundColor="{StaticResource NeonSuccess}" Padding="10,5" />
+                                    <Button Grid.Column="3" Text="Reject"
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type pm:DashboardPageModel}}, Path=RejectChoreCommand}"
+                                            CommandParameter="{Binding}" BackgroundColor="{StaticResource NeonDanger}" Padding="10,5" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+
+                <!-- Overdue Chores -->
+                <Label Text="Chores - Overdue" Style="{StaticResource Title3}" TextColor="{StaticResource NeonDanger}"
+                       IsVisible="{Binding OverdueChores.Count, Converter={StaticResource IsNotNullConverter}}" />
+                <CollectionView ItemsSource="{Binding OverdueChores}" SelectionMode="None"
+                                IsVisible="{Binding OverdueChores.Count, Converter={StaticResource IsNotNullConverter}}">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="models:ChoreInstance">
+                            <Border Style="{StaticResource CardStyle}" Margin="0,0,0,5">
+                                <Grid ColumnDefinitions="*,Auto,Auto">
+                                    <VerticalStackLayout>
+                                        <Label Text="{Binding Title}" Style="{StaticResource Body1Strong}" />
+                                        <Label Text="{Binding KidName}" Style="{StaticResource Caption1}" Opacity="0.7" />
+                                    </VerticalStackLayout>
+                                    <Label Grid.Column="1" Text="{Binding Amount, Converter={StaticResource CurrencyConverter}}"
+                                           Style="{StaticResource Body2}" VerticalOptions="Center" />
+                                    <Label Grid.Column="2" Text="Missed" TextColor="{StaticResource NeonDanger}"
+                                           Style="{StaticResource Caption1Strong}" VerticalOptions="Center" Margin="10,0,0,0" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+
+                <!-- Shopping Lists -->
+                <Label Text="Shopping Lists" Style="{StaticResource Title2}"
+                       IsVisible="{Binding ShoppingLists.Count, Converter={StaticResource IsNotNullConverter}}" />
+                <CollectionView ItemsSource="{Binding ShoppingLists}" SelectionMode="None"
+                                IsVisible="{Binding ShoppingLists.Count, Converter={StaticResource IsNotNullConverter}}">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="models:ShoppingList">
+                            <Border Style="{StaticResource CardStyle}" Margin="0,0,0,5">
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type pm:DashboardPageModel}}, Path=NavigateToShoppingListCommand}"
+                                                          CommandParameter="{Binding}" />
+                                </Border.GestureRecognizers>
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <Label Text="{Binding Name}" Style="{StaticResource Body1}" />
+                                    <Label Grid.Column="1" Text="{Binding UnpurchasedCount, StringFormat='{0} items'}"
+                                           Style="{StaticResource Caption1}" VerticalOptions="Center" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+
+                <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+
+            </VerticalStackLayout>
+        </ScrollView>
+    </RefreshView>
+</ContentPage>

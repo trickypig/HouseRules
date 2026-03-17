@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:pm="clr-namespace:HouseRules.PageModels"
+             xmlns:models="clr-namespace:HouseRules.Models"
+             xmlns:util="clr-namespace:HouseRules.Utilities"
+             x:Class="HouseRules.Pages.ChoreBoardPage"
+             x:DataType="pm:ChoreBoardPageModel"
+             Title="Chore Board">
+
+    <ContentPage.Resources>
+        <util:CurrencyConverter x:Key="CurrencyConverter" />
+        <util:DateDisplayConverter x:Key="DateDisplayConverter" />
+    </ContentPage.Resources>
+
+    <RefreshView Command="{Binding LoadDataCommand}" IsRefreshing="{Binding IsRefreshing}">
+        <ScrollView>
+            <VerticalStackLayout Spacing="15" Padding="{StaticResource LayoutPadding}">
+
+                <Grid ColumnDefinitions="*,Auto">
+                    <Label Text="Chore Board" Style="{StaticResource Title1}" />
+                    <Button Grid.Column="1" Text="+ New Chore" Command="{Binding ToggleChoreFormCommand}"
+                            IsVisible="{Binding IsParent}" />
+                </Grid>
+
+                <!-- Chore Form -->
+                <Border Style="{StaticResource CardStyle}" IsVisible="{Binding ShowChoreForm}">
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="{Binding EditingChoreId, StringFormat='Edit Chore', TargetNullValue='New Chore'}" Style="{StaticResource Title3}" />
+                        <Entry Placeholder="Title (required)" Text="{Binding ChoreTitle}" />
+                        <Entry Placeholder="Description" Text="{Binding ChoreDescription}" />
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                            <VerticalStackLayout>
+                                <Label Text="Pay Amount ($)" Style="{StaticResource Caption1}" />
+                                <Entry Placeholder="0.00" Text="{Binding ChoreAmountText}" Keyboard="Numeric" />
+                            </VerticalStackLayout>
+                            <VerticalStackLayout Grid.Column="1">
+                                <Label Text="Frequency" Style="{StaticResource Caption1}" />
+                                <Picker ItemsSource="{Binding FrequencyOptions}" SelectedItem="{Binding ChoreFrequency}" />
+                            </VerticalStackLayout>
+                        </Grid>
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                            <VerticalStackLayout>
+                                <Label Text="Day of Week" Style="{StaticResource Caption1}" />
+                                <Picker ItemsSource="{Binding DaysOfWeek}" SelectedIndex="{Binding ChoreDayOfWeek}" />
+                            </VerticalStackLayout>
+                            <VerticalStackLayout Grid.Column="1">
+                                <Label Text="Assign To" Style="{StaticResource Caption1}" />
+                                <Picker ItemsSource="{Binding Kids}" SelectedItem="{Binding ChoreAssignedKid}"
+                                        ItemDisplayBinding="{Binding Name}" />
+                            </VerticalStackLayout>
+                        </Grid>
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                            <VerticalStackLayout>
+                                <Label Text="Start Date" Style="{StaticResource Caption1}" />
+                                <DatePicker Date="{Binding ChoreStartDate}" />
+                            </VerticalStackLayout>
+                            <VerticalStackLayout Grid.Column="1">
+                                <Label Text="End Date" Style="{StaticResource Caption1}" />
+                                <DatePicker Date="{Binding ChoreEndDate}" />
+                            </VerticalStackLayout>
+                        </Grid>
+                        <HorizontalStackLayout Spacing="10">
+                            <Button Text="{Binding EditingChoreId, StringFormat='Update', TargetNullValue='Create'}"
+                                    Command="{Binding SubmitChoreCommand}" />
+                            <Button Text="Cancel" Command="{Binding ToggleChoreFormCommand}"
+                                    BackgroundColor="Transparent" TextColor="{StaticResource Primary}" />
+                        </HorizontalStackLayout>
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Awaiting Verification -->
+                <Label Text="Awaiting Verification" Style="{StaticResource Title2}"
+                       IsVisible="{Binding AwaitingVerification.Count, Converter={StaticResource IsNotNullConverter}}" />
+                <CollectionView ItemsSource="{Binding AwaitingVerification}" SelectionMode="None">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="models:ChoreInstance">
+                            <Border Style="{StaticResource CardStyle}" Margin="0,0,0,5">
+                                <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8">
+                                    <VerticalStackLayout>
+                                        <Label Text="{Binding Title}" Style="{StaticResource Body1Strong}" />
+                                        <Label Style="{StaticResource Caption1}" Opacity="0.7">
+                                            <Label.FormattedText>
+                                                <FormattedString>
+                                                    <Span Text="{Binding KidName}" />
+                                                    <Span Text=" | Due: " />
+                                                    <Span Text="{Binding DueDate, Converter={StaticResource DateDisplayConverter}}" />
+                                                </FormattedString>
+                                            </Label.FormattedText>
+                                        </Label>
+                                    </VerticalStackLayout>
+                                    <Label Grid.Column="1" Text="{Binding Amount, Converter={StaticResource CurrencyConverter}}"
+                                           Style="{StaticResource Body2}" VerticalOptions="Center" />
+                                    <Button Grid.Column="2" Text="Verify"
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type pm:ChoreBoardPageModel}}, Path=VerifyChoreCommand}"
+                                            CommandParameter="{Binding}" BackgroundColor="{StaticResource NeonSuccess}" Padding="10,5" />
+                                    <Button Grid.Column="3" Text="Reject"
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type pm:ChoreBoardPageModel}}, Path=RejectChoreCommand}"
+                                            CommandParameter="{Binding}" BackgroundColor="{StaticResource NeonDanger}" Padding="10,5" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+
+                <!-- Today -->
+                <Label Text="Today" Style="{StaticResource Title2}" />
+                <CollectionView ItemsSource="{Binding TodayInstances}" SelectionMode="None">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="models:ChoreInstance">
+                            <Border Style="{StaticResource CardStyle}" Margin="0,0,0,5">
+                                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                                    <VerticalStackLayout>
+                                        <Label Text="{Binding Title}" Style="{StaticResource Body1Strong}" />
+                                        <Label Style="{StaticResource Caption1}" Opacity="0.7">
+                                            <Label.FormattedText>
+                                                <FormattedString>
+                                                    <Span Text="{Binding KidName}" />
+                                                    <Span Text=" | " />
+                                                    <Span Text="{Binding Status}" />
+                                                </FormattedString>
+                                            </Label.FormattedText>
+                                        </Label>
+                                    </VerticalStackLayout>
+                                    <Label Grid.Column="1" Text="{Binding Amount, Converter={StaticResource CurrencyConverter}}"
+                                           Style="{StaticResource Body2}" VerticalOptions="Center" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                    <CollectionView.EmptyView>
+                        <Label Text="No chores for today" Style="{StaticResource Body1}" Opacity="0.5" Margin="0,5" />
+                    </CollectionView.EmptyView>
+                </CollectionView>
+
+                <!-- Upcoming -->
+                <Label Text="Upcoming" Style="{StaticResource Title2}"
+                       IsVisible="{Binding UpcomingInstances.Count, Converter={StaticResource IsNotNullConverter}}" />
+                <CollectionView ItemsSource="{Binding UpcomingInstances}" SelectionMode="None">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="models:ChoreInstance">
+                            <Border Style="{StaticResource CardStyle}" Margin="0,0,0,5">
+                                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                                    <VerticalStackLayout>
+                                        <Label Text="{Binding Title}" Style="{StaticResource Body1Strong}" />
+                                        <Label Text="{Binding DueDate, Converter={StaticResource DateDisplayConverter}}"
+                                               Style="{StaticResource Caption1}" Opacity="0.7" />
+                                    </VerticalStackLayout>
+                                    <Label Grid.Column="1" Text="{Binding Amount, Converter={StaticResource CurrencyConverter}}"
+                                           Style="{StaticResource Body2}" VerticalOptions="Center" />
+                                    <Label Grid.Column="2" Text="{Binding KidName}" Style="{StaticResource Caption1}" VerticalOptions="Center" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+
+                <!-- Templates -->
+                <Label Text="Chore Templates" Style="{StaticResource Title2}" IsVisible="{Binding IsParent}" />
+                <CollectionView ItemsSource="{Binding Templates}" SelectionMode="None" IsVisible="{Binding IsParent}">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="models:ChoreTemplate">
+                            <Border Style="{StaticResource CardStyle}" Margin="0,0,0,5">
+                                <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8">
+                                    <VerticalStackLayout>
+                                        <Label Text="{Binding Title}" Style="{StaticResource Body1Strong}" />
+                                        <Label Style="{StaticResource Caption1}" Opacity="0.7">
+                                            <Label.FormattedText>
+                                                <FormattedString>
+                                                    <Span Text="{Binding Frequency}" />
+                                                    <Span Text="{Binding AssignedKidName, StringFormat=' | {0}'}" />
+                                                </FormattedString>
+                                            </Label.FormattedText>
+                                        </Label>
+                                    </VerticalStackLayout>
+                                    <Label Grid.Column="1" Text="{Binding Amount, Converter={StaticResource CurrencyConverter}}"
+                                           Style="{StaticResource Body2}" VerticalOptions="Center" />
+                                    <Button Grid.Column="2" Text="Edit"
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type pm:ChoreBoardPageModel}}, Path=EditChoreCommand}"
+                                            CommandParameter="{Binding}" BackgroundColor="Transparent" TextColor="{StaticResource Primary}" Padding="5" />
+                                    <Button Grid.Column="3" Text="X"
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type pm:ChoreBoardPageModel}}, Path=DeleteChoreCommand}"
+                                            CommandParameter="{Binding}" BackgroundColor="Transparent" TextColor="{StaticResource NeonDanger}" Padding="5" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+
+                <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+            </VerticalStackLayout>
+        </ScrollView>
+    </RefreshView>
+</ContentPage>

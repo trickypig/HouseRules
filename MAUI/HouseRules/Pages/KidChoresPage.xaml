@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:pm="clr-namespace:HouseRules.PageModels"
+             xmlns:models="clr-namespace:HouseRules.Models"
+             xmlns:util="clr-namespace:HouseRules.Utilities"
+             x:Class="HouseRules.Pages.KidChoresPage"
+             x:DataType="pm:KidChoresPageModel"
+             Title="My Chores">
+
+    <ContentPage.Resources>
+        <util:CurrencyConverter x:Key="CurrencyConverter" />
+        <util:DateDisplayConverter x:Key="DateDisplayConverter" />
+    </ContentPage.Resources>
+
+    <RefreshView Command="{Binding LoadDataCommand}" IsRefreshing="{Binding IsRefreshing}">
+        <ScrollView>
+            <VerticalStackLayout Spacing="15" Padding="{StaticResource LayoutPadding}">
+
+                <Label Text="My Chores" Style="{StaticResource Title1}" />
+
+                <!-- Overdue -->
+                <Label Text="Overdue" Style="{StaticResource Title3}" TextColor="{StaticResource NeonDanger}"
+                       IsVisible="{Binding OverdueChores.Count, Converter={StaticResource IsNotNullConverter}}" />
+                <CollectionView ItemsSource="{Binding OverdueChores}" SelectionMode="None">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="models:ChoreInstance">
+                            <Border Style="{StaticResource CardStyle}" Margin="0,0,0,5">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <Label Text="{Binding Title}" Style="{StaticResource Body1Strong}" />
+                                    <Label Grid.Column="1" Text="Missed" TextColor="{StaticResource NeonDanger}" Style="{StaticResource Caption1Strong}" VerticalOptions="Center" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+
+                <!-- To Do -->
+                <Label Text="To Do" Style="{StaticResource Title3}"
+                       IsVisible="{Binding TodoChores.Count, Converter={StaticResource IsNotNullConverter}}" />
+                <CollectionView ItemsSource="{Binding TodoChores}" SelectionMode="None">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="models:ChoreInstance">
+                            <Border Style="{StaticResource CardStyle}" Margin="0,0,0,5">
+                                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                                    <VerticalStackLayout>
+                                        <Label Text="{Binding Title}" Style="{StaticResource Body1Strong}" />
+                                        <Label Text="{Binding DueDate, Converter={StaticResource DateDisplayConverter}, StringFormat='Due: {0}'}"
+                                               Style="{StaticResource Caption1}" Opacity="0.7" />
+                                    </VerticalStackLayout>
+                                    <Label Grid.Column="1" Text="{Binding Amount, Converter={StaticResource CurrencyConverter}}"
+                                           Style="{StaticResource Body2}" VerticalOptions="Center" />
+                                    <Button Grid.Column="2" Text="Done"
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type pm:KidChoresPageModel}}, Path=CompleteChoreCommand}"
+                                            CommandParameter="{Binding}" BackgroundColor="{StaticResource NeonSuccess}" Padding="10,5" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+
+                <!-- Available -->
+                <Label Text="Available" Style="{StaticResource Title3}"
+                       IsVisible="{Binding AvailableChores.Count, Converter={StaticResource IsNotNullConverter}}" />
+                <CollectionView ItemsSource="{Binding AvailableChores}" SelectionMode="None">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="models:ChoreInstance">
+                            <Border Style="{StaticResource CardStyle}" Margin="0,0,0,5">
+                                <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8">
+                                    <VerticalStackLayout>
+                                        <Label Text="{Binding Title}" Style="{StaticResource Body1Strong}" />
+                                        <Label Text="{Binding DueDate, Converter={StaticResource DateDisplayConverter}, StringFormat='Due: {0}'}"
+                                               Style="{StaticResource Caption1}" Opacity="0.7" />
+                                    </VerticalStackLayout>
+                                    <Label Grid.Column="1" Text="{Binding Amount, Converter={StaticResource CurrencyConverter}}"
+                                           Style="{StaticResource Body2}" VerticalOptions="Center" />
+                                    <Button Grid.Column="2" Text="I'll Do It"
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type pm:KidChoresPageModel}}, Path=ClaimChoreCommand}"
+                                            CommandParameter="{Binding}" Padding="10,5" />
+                                    <Button Grid.Column="3" Text="I Did It"
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type pm:KidChoresPageModel}}, Path=ClaimAndCompleteChoreCommand}"
+                                            CommandParameter="{Binding}" BackgroundColor="{StaticResource NeonSuccess}" Padding="10,5" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+
+                <!-- Awaiting Verification -->
+                <Label Text="Awaiting Verification" Style="{StaticResource Title3}"
+                       IsVisible="{Binding AwaitingVerificationChores.Count, Converter={StaticResource IsNotNullConverter}}" />
+                <CollectionView ItemsSource="{Binding AwaitingVerificationChores}" SelectionMode="None">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="models:ChoreInstance">
+                            <Border Style="{StaticResource CardStyle}" Margin="0,0,0,5">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <Label Text="{Binding Title}" Style="{StaticResource Body1}" />
+                                    <Label Grid.Column="1" Text="Pending" Style="{StaticResource Caption1}" TextColor="Orange" VerticalOptions="Center" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+
+                <!-- Empty state -->
+                <Label Text="No chores right now" Style="{StaticResource Body1}" Opacity="0.5"
+                       HorizontalOptions="Center" Margin="0,10"
+                       IsVisible="False" />
+
+                <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+            </VerticalStackLayout>
+        </ScrollView>
+    </RefreshView>
+</ContentPage>

@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:pm="clr-namespace:HouseRules.PageModels"
+             xmlns:models="clr-namespace:HouseRules.Models"
+             xmlns:util="clr-namespace:HouseRules.Utilities"
+             x:Class="HouseRules.Pages.MoneyPage"
+             x:DataType="pm:MoneyPageModel"
+             Title="Money">
+
+    <ContentPage.Resources>
+        <util:CurrencyConverter x:Key="CurrencyConverter" />
+        <util:ColorConverter x:Key="ColorConverter" />
+        <util:BalanceColorConverter x:Key="BalanceColorConverter" />
+        <util:DateDisplayConverter x:Key="DateDisplayConverter" />
+    </ContentPage.Resources>
+
+    <RefreshView Command="{Binding LoadDataCommand}" IsRefreshing="{Binding IsRefreshing}">
+        <ScrollView>
+            <VerticalStackLayout Spacing="15" Padding="{StaticResource LayoutPadding}">
+
+                <!-- Kids -->
+                <Label Text="Kids" Style="{StaticResource Title1}" />
+                <CollectionView ItemsSource="{Binding Kids}" SelectionMode="None">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="models:Kid">
+                            <Border Style="{StaticResource CardStyle}" Margin="0,0,0,10">
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type pm:MoneyPageModel}}, Path=NavigateToKidCommand}"
+                                                          CommandParameter="{Binding}" />
+                                </Border.GestureRecognizers>
+                                <Grid ColumnDefinitions="4,*,Auto" ColumnSpacing="15">
+                                    <BoxView Color="{Binding Color, Converter={StaticResource ColorConverter}}"
+                                             WidthRequest="4" CornerRadius="2" />
+                                    <VerticalStackLayout Grid.Column="1" VerticalOptions="Center">
+                                        <Label Text="{Binding Name}" Style="{StaticResource Body1Strong}" />
+                                        <Label Style="{StaticResource Caption1}" Opacity="0.7">
+                                            <Label.FormattedText>
+                                                <FormattedString>
+                                                    <Span Text="{Binding PendingCount, StringFormat='{0} pending'}" />
+                                                </FormattedString>
+                                            </Label.FormattedText>
+                                        </Label>
+                                    </VerticalStackLayout>
+                                    <Label Grid.Column="2" Text="{Binding Balance, Converter={StaticResource CurrencyConverter}}"
+                                           Style="{StaticResource Title2}" VerticalOptions="Center"
+                                           TextColor="{Binding Balance, Converter={StaticResource BalanceColorConverter}}" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+
+                <!-- Quick Transaction -->
+                <Button Text="+ Quick Transaction" Command="{Binding ToggleQuickTransactionCommand}" />
+                <Border Style="{StaticResource CardStyle}" IsVisible="{Binding ShowQuickTransaction}">
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="Quick Transaction" Style="{StaticResource Title3}" />
+                        <Label Text="Kid" Style="{StaticResource Caption1}" />
+                        <Picker ItemsSource="{Binding Kids}" SelectedItem="{Binding SelectedKid}"
+                                ItemDisplayBinding="{Binding Name}" />
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                            <VerticalStackLayout>
+                                <Label Text="Type" Style="{StaticResource Caption1}" />
+                                <Picker ItemsSource="{Binding Types}" SelectedItem="{Binding TxType}" />
+                            </VerticalStackLayout>
+                            <VerticalStackLayout Grid.Column="1">
+                                <Label Text="Category" Style="{StaticResource Caption1}" />
+                                <Picker ItemsSource="{Binding Categories}" SelectedItem="{Binding TxCategory}" />
+                            </VerticalStackLayout>
+                        </Grid>
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                            <Entry Placeholder="Amount" Text="{Binding TxAmountText}" Keyboard="Numeric" />
+                            <DatePicker Grid.Column="1" Date="{Binding TxDate}" />
+                        </Grid>
+                        <Entry Placeholder="Description (optional)" Text="{Binding TxDescription}" />
+                        <Button Text="Add" Command="{Binding SubmitQuickTransactionCommand}" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Recent Activity -->
+                <Label Text="Recent Activity" Style="{StaticResource Title2}"
+                       IsVisible="{Binding RecentTransactions.Count, Converter={StaticResource IsNotNullConverter}}" />
+                <CollectionView ItemsSource="{Binding RecentTransactions}" SelectionMode="None">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="models:Transaction">
+                            <Border Style="{StaticResource CardStyle}" Margin="0,0,0,5">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <VerticalStackLayout>
+                                        <Label Style="{StaticResource Body1}">
+                                            <Label.FormattedText>
+                                                <FormattedString>
+                                                    <Span Text="{Binding KidName}" FontAttributes="Bold" />
+                                                    <Span Text=" - " />
+                                                    <Span Text="{Binding Description}" />
+                                                </FormattedString>
+                                            </Label.FormattedText>
+                                        </Label>
+                                        <Label Style="{StaticResource Caption1}" Opacity="0.7">
+                                            <Label.FormattedText>
+                                                <FormattedString>
+                                                    <Span Text="{Binding Status}" />
+                                                    <Span Text=" | " />
+                                                    <Span Text="{Binding Category}" />
+                                                    <Span Text=" | " />
+                                                    <Span Text="{Binding TransactionDate, Converter={StaticResource DateDisplayConverter}}" />
+                                                </FormattedString>
+                                            </Label.FormattedText>
+                                        </Label>
+                                    </VerticalStackLayout>
+                                    <Label Grid.Column="1" Text="{Binding Amount, Converter={StaticResource CurrencyConverter}}"
+                                           Style="{StaticResource Body1Strong}" VerticalOptions="Center" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+
+                <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+            </VerticalStackLayout>
+        </ScrollView>
+    </RefreshView>
+</ContentPage>
