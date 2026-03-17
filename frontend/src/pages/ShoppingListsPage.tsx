@@ -121,7 +121,7 @@ export default function ShoppingListsPage() {
                 </div>
               </Link>
               {!isKid && (
-                <div style={{ display: 'flex', gap: '0.5rem', padding: '0 1rem 1rem', justifyContent: 'center' }}>
+                <div style={{ display: 'flex', gap: '0.5rem', padding: '0.75rem 1rem 1rem', justifyContent: 'center' }}>
                   <button className="btn btn-sm btn-outline" onClick={() => {
                     setEditingId(list.id); setName(list.name); setShowForm(true);
                   }}>Rename</button>

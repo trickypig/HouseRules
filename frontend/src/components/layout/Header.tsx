@@ -8,7 +8,11 @@ export default function Header() {
     <header className="app-header">
       <div className="header-inner">
         <Link to="/" className="app-logo">
-          <span className="logo-icon">&#127968;</span>
+          <svg className="logo-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="3 12 12 3 21 12" />
+            <rect x="5" y="12" width="14" height="10" />
+            <rect x="9" y="16" width="6" height="6" />
+          </svg>
           House Rules
         </Link>
         <nav className="header-nav">

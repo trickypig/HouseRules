@@ -983,7 +983,7 @@ export default function KidDetailPage() {
                 }
                 if (item.kind === 'goal_wanted') {
                   return (
-                    <div key={`want-${item.projection.goal_id}`} className="item-card" style={{ marginBottom: '0.4rem', borderColor: 'var(--color-danger)', background: '#fef2f2' }}>
+                    <div key={`want-${item.projection.goal_id}`} className="item-card" style={{ marginBottom: '0.4rem', borderColor: 'var(--color-danger)', background: 'rgba(255, 68, 68, 0.1)' }}>
                       <div className="item-details">
                         <div className="item-header">
                           <span className="item-name">{item.projection.name}</span>

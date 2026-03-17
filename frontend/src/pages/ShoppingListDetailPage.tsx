@@ -209,7 +209,7 @@ function ItemRow({ item, onToggle, onDelete, canDelete, formatDate }: {
             {item.description}
           </span>
           {item.quantity && <span style={{ marginLeft: '0.5rem', color: 'var(--text-secondary)' }}>({item.quantity})</span>}
-          {item.is_request === 1 && <span className="badge" style={{ marginLeft: '0.5rem', background: 'var(--info-color)', color: '#fff', fontSize: '0.7rem' }}>Requested</span>}
+          {item.is_request === 1 && <span className="badge" style={{ marginLeft: '0.5rem', background: 'var(--color-secondary)', color: '#fff', fontSize: '0.7rem' }}>Requested</span>}
           {item.notes && <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{item.notes}</div>}
           <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
             {item.added_by_name || 'Unknown'}
