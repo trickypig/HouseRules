@@ -10,6 +10,8 @@ public partial class DashboardPageModel : ObservableObject
 
     [ObservableProperty] private bool _isBusy;
     [ObservableProperty] private bool _isRefreshing;
+    [ObservableProperty] private bool _hasOverdueChores;
+    [ObservableProperty] private bool _hasShoppingLists;
 
     // Quick transaction form
     [ObservableProperty] private bool _showQuickTransaction;
@@ -52,12 +54,14 @@ public partial class DashboardPageModel : ObservableObject
 
             OverdueChores.Clear();
             foreach (var c in data.OverdueChores) OverdueChores.Add(c);
+            HasOverdueChores = OverdueChores.Count > 0;
 
             CompletedChores.Clear();
             foreach (var c in data.CompletedChores) CompletedChores.Add(c);
 
             ShoppingLists.Clear();
             foreach (var s in data.ShoppingLists) ShoppingLists.Add(s);
+            HasShoppingLists = ShoppingLists.Count > 0;
         }
         catch (UnauthorizedAccessException) { }
         catch (Exception ex)

@@ -87,7 +87,7 @@ export function getKidUsers() {
   return apiClient.get<{ kid_users: KidUser[] }>('/auth/kid-users');
 }
 
-export function updateKidLogin(id: number, data: { password?: string; display_name?: string }) {
+export function updateKidLogin(id: number, data: { email?: string; password?: string; display_name?: string }) {
   return apiClient.put<{ kid_user: KidUser }>(`/auth/kid-login/${id}`, data);
 }
 

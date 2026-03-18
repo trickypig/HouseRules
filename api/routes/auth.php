@@ -161,6 +161,17 @@ function registerAuthRoutes(Router $router, PDO $db): void
             Response::notFound('Kid user not found');
         }
 
+        if (isset($body['email'])) {
+            if (!Validator::email($body['email'])) {
+                Response::error('Invalid email address');
+            }
+            $existing = User::findByEmail($db, $body['email']);
+            if ($existing && $existing['id'] !== $kidUser['id']) {
+                Response::error('Email already in use');
+            }
+            User::updateEmail($db, $kidUser['id'], $body['email']);
+        }
+
         if (isset($body['password'])) {
             if (!Validator::minLength($body['password'], 4)) {
                 Response::error('Password must be at least 4 characters');

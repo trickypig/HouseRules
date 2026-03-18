@@ -22,30 +22,23 @@
                 <!-- Kids -->
                 <Label Text="Kids" Style="{StaticResource Title1}" />
                 <CollectionView ItemsSource="{Binding Kids}" SelectionMode="None">
+                    <CollectionView.ItemsLayout>
+                        <LinearItemsLayout Orientation="Horizontal" ItemSpacing="10" />
+                    </CollectionView.ItemsLayout>
                     <CollectionView.ItemTemplate>
                         <DataTemplate x:DataType="models:Kid">
-                            <Border Style="{StaticResource CardStyle}" Margin="0,0,0,10">
+                            <Border Style="{StaticResource CardStyle}" WidthRequest="160">
                                 <Border.GestureRecognizers>
                                     <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type pm:MoneyPageModel}}, Path=NavigateToKidCommand}"
                                                           CommandParameter="{Binding}" />
                                 </Border.GestureRecognizers>
-                                <Grid ColumnDefinitions="4,*,Auto" ColumnSpacing="15">
-                                    <BoxView Color="{Binding Color, Converter={StaticResource ColorConverter}}"
-                                             WidthRequest="4" CornerRadius="2" />
-                                    <VerticalStackLayout Grid.Column="1" VerticalOptions="Center">
-                                        <Label Text="{Binding Name}" Style="{StaticResource Body1Strong}" />
-                                        <Label Style="{StaticResource Caption1}" Opacity="0.7">
-                                            <Label.FormattedText>
-                                                <FormattedString>
-                                                    <Span Text="{Binding PendingCount, StringFormat='{0} pending'}" />
-                                                </FormattedString>
-                                            </Label.FormattedText>
-                                        </Label>
-                                    </VerticalStackLayout>
-                                    <Label Grid.Column="2" Text="{Binding Balance, Converter={StaticResource CurrencyConverter}}"
-                                           Style="{StaticResource Title2}" VerticalOptions="Center"
-                                           TextColor="{Binding Balance, Converter={StaticResource BalanceColorConverter}}" />
-                                </Grid>
+                                <VerticalStackLayout Spacing="5">
+                                    <BoxView HeightRequest="4" Color="{Binding Color, Converter={StaticResource ColorConverter}}" CornerRadius="2" />
+                                    <Label Text="{Binding Name}" Style="{StaticResource Body1Strong}" />
+                                    <Label Text="{Binding Balance, Converter={StaticResource CurrencyConverter}}" Style="{StaticResource Title3}" />
+                                    <Label Text="{Binding PendingCount, StringFormat='{0} pending'}" Style="{StaticResource Caption2}"
+                                           TextColor="Orange" IsVisible="{Binding PendingCount, Converter={StaticResource IsNotNullConverter}}" />
+                                </VerticalStackLayout>
                             </Border>
                         </DataTemplate>
                     </CollectionView.ItemTemplate>

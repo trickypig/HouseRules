@@ -12,6 +12,9 @@
         <util:CurrencyConverter x:Key="CurrencyConverter" />
         <util:ColorConverter x:Key="ColorConverter" />
         <util:DateDisplayConverter x:Key="DateDisplayConverter" />
+        <util:BoolToColorConverter x:Key="BoolToColorConverter" />
+        <util:BoolInverterConverter x:Key="BoolInverterConverter" />
+        <util:IntToBoolConverter x:Key="IntToBoolConverter" />
     </ContentPage.Resources>
 
     <RefreshView Command="{Binding LoadDataCommand}" IsRefreshing="{Binding IsRefreshing}">
@@ -82,12 +85,8 @@
                     </CollectionView.ItemTemplate>
                 </CollectionView>
 
-                <!-- Needs Attention Header -->
-                <Label Text="Needs Attention" Style="{StaticResource Title2}"
-                       IsVisible="{Binding PendingTransactions.Count, Converter={StaticResource IsNotNullConverter}}" />
-
                 <!-- Pending Transactions -->
-                <Label Text="Pending Transactions" Style="{StaticResource Title3}"
+                <Label Text="Needs Approval" Style="{StaticResource Title2}"
                        IsVisible="{Binding PendingTransactions.Count, Converter={StaticResource IsNotNullConverter}}" />
                 <CollectionView ItemsSource="{Binding PendingTransactions}" SelectionMode="None"
                                 IsVisible="{Binding PendingTransactions.Count, Converter={StaticResource IsNotNullConverter}}">
@@ -129,85 +128,78 @@
                     </CollectionView.ItemTemplate>
                 </CollectionView>
 
-                <!-- Awaiting Verification Chores -->
-                <Label Text="Chores - Awaiting Verification" Style="{StaticResource Title3}"
-                       IsVisible="{Binding CompletedChores.Count, Converter={StaticResource IsNotNullConverter}}" />
-                <CollectionView ItemsSource="{Binding CompletedChores}" SelectionMode="None"
-                                IsVisible="{Binding CompletedChores.Count, Converter={StaticResource IsNotNullConverter}}">
-                    <CollectionView.ItemTemplate>
-                        <DataTemplate x:DataType="models:ChoreInstance">
-                            <Border Style="{StaticResource CardStyle}" Margin="0,0,0,5">
-                                <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8">
-                                    <VerticalStackLayout>
-                                        <Label Text="{Binding Title}" Style="{StaticResource Body1Strong}" />
-                                        <Label Style="{StaticResource Caption1}" Opacity="0.7">
-                                            <Label.FormattedText>
-                                                <FormattedString>
-                                                    <Span Text="{Binding KidName}" />
-                                                    <Span Text=" | Due: " />
-                                                    <Span Text="{Binding DueDate, Converter={StaticResource DateDisplayConverter}}" />
-                                                </FormattedString>
-                                            </Label.FormattedText>
-                                        </Label>
-                                    </VerticalStackLayout>
-                                    <Label Grid.Column="1" Text="{Binding Amount, Converter={StaticResource CurrencyConverter}}"
-                                           Style="{StaticResource Body2}" VerticalOptions="Center" />
-                                    <Button Grid.Column="2" Text="Verify"
-                                            Command="{Binding Source={RelativeSource AncestorType={x:Type pm:DashboardPageModel}}, Path=VerifyChoreCommand}"
-                                            CommandParameter="{Binding}" BackgroundColor="{StaticResource NeonSuccess}" Padding="10,5" />
-                                    <Button Grid.Column="3" Text="Reject"
-                                            Command="{Binding Source={RelativeSource AncestorType={x:Type pm:DashboardPageModel}}, Path=RejectChoreCommand}"
-                                            CommandParameter="{Binding}" BackgroundColor="{StaticResource NeonDanger}" Padding="10,5" />
-                                </Grid>
-                            </Border>
-                        </DataTemplate>
-                    </CollectionView.ItemTemplate>
-                </CollectionView>
+                <!-- Chores & Shopping Lists side by side -->
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="15">
 
-                <!-- Overdue Chores -->
-                <Label Text="Chores - Overdue" Style="{StaticResource Title3}" TextColor="{StaticResource NeonDanger}"
-                       IsVisible="{Binding OverdueChores.Count, Converter={StaticResource IsNotNullConverter}}" />
-                <CollectionView ItemsSource="{Binding OverdueChores}" SelectionMode="None"
-                                IsVisible="{Binding OverdueChores.Count, Converter={StaticResource IsNotNullConverter}}">
-                    <CollectionView.ItemTemplate>
-                        <DataTemplate x:DataType="models:ChoreInstance">
-                            <Border Style="{StaticResource CardStyle}" Margin="0,0,0,5">
-                                <Grid ColumnDefinitions="*,Auto,Auto">
-                                    <VerticalStackLayout>
-                                        <Label Text="{Binding Title}" Style="{StaticResource Body1Strong}" />
-                                        <Label Text="{Binding KidName}" Style="{StaticResource Caption1}" Opacity="0.7" />
-                                    </VerticalStackLayout>
-                                    <Label Grid.Column="1" Text="{Binding Amount, Converter={StaticResource CurrencyConverter}}"
-                                           Style="{StaticResource Body2}" VerticalOptions="Center" />
-                                    <Label Grid.Column="2" Text="Missed" TextColor="{StaticResource NeonDanger}"
-                                           Style="{StaticResource Caption1Strong}" VerticalOptions="Center" Margin="10,0,0,0" />
-                                </Grid>
-                            </Border>
-                        </DataTemplate>
-                    </CollectionView.ItemTemplate>
-                </CollectionView>
+                    <!-- Chores Column -->
+                    <Border Style="{StaticResource CardStyle}" Grid.Column="0">
+                        <VerticalStackLayout Spacing="8">
+                            <Label Text="Chores" Style="{StaticResource Title3}"
+                                   TextColor="{Binding HasOverdueChores, Converter={StaticResource BoolToColorConverter}}" />
 
-                <!-- Shopping Lists -->
-                <Label Text="Shopping Lists" Style="{StaticResource Title2}"
-                       IsVisible="{Binding ShoppingLists.Count, Converter={StaticResource IsNotNullConverter}}" />
-                <CollectionView ItemsSource="{Binding ShoppingLists}" SelectionMode="None"
-                                IsVisible="{Binding ShoppingLists.Count, Converter={StaticResource IsNotNullConverter}}">
-                    <CollectionView.ItemTemplate>
-                        <DataTemplate x:DataType="models:ShoppingList">
-                            <Border Style="{StaticResource CardStyle}" Margin="0,0,0,5">
-                                <Border.GestureRecognizers>
-                                    <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type pm:DashboardPageModel}}, Path=NavigateToShoppingListCommand}"
-                                                          CommandParameter="{Binding}" />
-                                </Border.GestureRecognizers>
-                                <Grid ColumnDefinitions="*,Auto">
-                                    <Label Text="{Binding Name}" Style="{StaticResource Body1}" />
-                                    <Label Grid.Column="1" Text="{Binding UnpurchasedCount, StringFormat='{0} items'}"
-                                           Style="{StaticResource Caption1}" VerticalOptions="Center" />
-                                </Grid>
-                            </Border>
-                        </DataTemplate>
-                    </CollectionView.ItemTemplate>
-                </CollectionView>
+                            <!-- Up to date message (no overdue chores) -->
+                            <Label Text="All up to date!" Style="{StaticResource Body2}" Opacity="0.7"
+                                   IsVisible="{Binding HasOverdueChores, Converter={StaticResource BoolInverterConverter}}" />
+
+                            <!-- Overdue chore items -->
+                            <CollectionView ItemsSource="{Binding OverdueChores}" SelectionMode="None"
+                                            IsVisible="{Binding HasOverdueChores}">
+                                <CollectionView.ItemTemplate>
+                                    <DataTemplate x:DataType="models:ChoreInstance">
+                                        <Border Style="{StaticResource CardStyle}" Margin="0,0,0,5" BackgroundColor="#222240">
+                                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                                <VerticalStackLayout>
+                                                    <Label Text="{Binding Title}" Style="{StaticResource Body1Strong}" />
+                                                    <Label Style="{StaticResource Caption1}" Opacity="0.7">
+                                                        <Label.FormattedText>
+                                                            <FormattedString>
+                                                                <Span Text="{Binding KidName}" />
+                                                                <Span Text=" · Due " />
+                                                                <Span Text="{Binding DueDate, Converter={StaticResource DateDisplayConverter}}" />
+                                                            </FormattedString>
+                                                        </Label.FormattedText>
+                                                    </Label>
+                                                </VerticalStackLayout>
+                                                <Label Grid.Column="1" Text="Missed" TextColor="{StaticResource NeonDanger}"
+                                                       Style="{StaticResource Caption1Strong}" VerticalOptions="Center" />
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </CollectionView.ItemTemplate>
+                            </CollectionView>
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <!-- Shopping Lists Column -->
+                    <Border Style="{StaticResource CardStyle}" Grid.Column="1">
+                        <VerticalStackLayout Spacing="8">
+                            <Label Text="Shopping Lists" Style="{StaticResource Title3}" />
+
+                            <Label Text="No lists yet" Style="{StaticResource Body2}" Opacity="0.7"
+                                   IsVisible="{Binding HasShoppingLists, Converter={StaticResource BoolInverterConverter}}" />
+
+                            <CollectionView ItemsSource="{Binding ShoppingLists}" SelectionMode="None"
+                                            IsVisible="{Binding HasShoppingLists}">
+                                <CollectionView.ItemTemplate>
+                                    <DataTemplate x:DataType="models:ShoppingList">
+                                        <Border Style="{StaticResource CardStyle}" Margin="0,0,0,5" BackgroundColor="#222240">
+                                            <Border.GestureRecognizers>
+                                                <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type pm:DashboardPageModel}}, Path=NavigateToShoppingListCommand}"
+                                                                      CommandParameter="{Binding}" />
+                                            </Border.GestureRecognizers>
+                                            <Grid ColumnDefinitions="*,Auto">
+                                                <Label Text="{Binding Name}" Style="{StaticResource Body1}" />
+                                                <Label Grid.Column="1" Text="{Binding UnpurchasedCount, StringFormat='{0} items'}"
+                                                       Style="{StaticResource Caption1}" VerticalOptions="Center" />
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </CollectionView.ItemTemplate>
+                            </CollectionView>
+                        </VerticalStackLayout>
+                    </Border>
+
+                </Grid>
 
                 <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
 

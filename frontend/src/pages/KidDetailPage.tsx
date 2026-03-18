@@ -61,6 +61,11 @@ export default function KidDetailPage() {
   const [kidEmail, setKidEmail] = useState('');
   const [kidPassword, setKidPassword] = useState('');
 
+  // Edit kid login
+  const [editingKidLogin, setEditingKidLogin] = useState(false);
+  const [editKidEmail, setEditKidEmail] = useState('');
+  const [editKidPassword, setEditKidPassword] = useState('');
+
   useEffect(() => {
     loadData();
   }, [kidId]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -335,6 +340,29 @@ export default function KidDetailPage() {
     }
   }
 
+  function startEditKidLogin() {
+    if (!kidUser) return;
+    setEditKidEmail(kidUser.email);
+    setEditKidPassword('');
+    setEditingKidLogin(true);
+  }
+
+  async function handleUpdateKidLogin(e: FormEvent) {
+    e.preventDefault();
+    if (!kidUser) return;
+    try {
+      const data: { email?: string; password?: string } = {};
+      if (editKidEmail !== kidUser.email) data.email = editKidEmail;
+      if (editKidPassword) data.password = editKidPassword;
+      if (Object.keys(data).length === 0) { setEditingKidLogin(false); return; }
+      const res = await api.updateKidLogin(kidUser.id, data);
+      setKidUser(res.kid_user);
+      setEditingKidLogin(false);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to update login');
+    }
+  }
+
   async function loadPage(page: number) {
     try {
       const today = new Date().toISOString().split('T')[0];
@@ -520,13 +548,35 @@ export default function KidDetailPage() {
           <h2>Kid Login</h2>
         </div>
         {kidUser ? (
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <p><strong>{kidUser.email}</strong></p>
-              <p className="text-muted">{kid.name} can log in with this account to view their balance and request money.</p>
+          editingKidLogin ? (
+            <form onSubmit={handleUpdateKidLogin}>
+              <div className="form-row">
+                <div className="form-group form-group-grow">
+                  <label>Email</label>
+                  <input type="email" value={editKidEmail} onChange={e => setEditKidEmail(e.target.value)} required />
+                </div>
+                <div className="form-group form-group-grow">
+                  <label>New Password (leave blank to keep current)</label>
+                  <input type="text" value={editKidPassword} onChange={e => setEditKidPassword(e.target.value)} placeholder="Leave blank to keep current" minLength={4} />
+                </div>
+              </div>
+              <div className="form-actions">
+                <button type="submit" className="btn btn-primary">Save</button>
+                <button type="button" className="btn btn-outline" onClick={() => setEditingKidLogin(false)}>Cancel</button>
+              </div>
+            </form>
+          ) : (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <p><strong>{kidUser.email}</strong></p>
+                <p className="text-muted">{kid.name} can log in with this account to view their balance and request money.</p>
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button onClick={startEditKidLogin} className="btn btn-sm btn-outline">Edit</button>
+                <button onClick={handleDeleteKidLogin} className="btn btn-sm btn-ghost">Remove</button>
+              </div>
             </div>
-            <button onClick={handleDeleteKidLogin} className="btn btn-sm btn-ghost">Remove</button>
-          </div>
+          )
         ) : showKidLoginForm ? (
           <form onSubmit={handleCreateKidLogin}>
             <div className="form-row">

@@ -29,6 +29,15 @@ public partial class KidDetailPageModel : ObservableObject
     [ObservableProperty] private string _kidLoginPassword = "";
     [ObservableProperty] private KidUser? _kidLogin;
 
+    // Edit kid login
+    [ObservableProperty] private bool _isEditingKidLogin;
+    [ObservableProperty] private string _editKidLoginEmail = "";
+    [ObservableProperty] private string _editKidLoginPassword = "";
+
+    // Computed visibility for kid login states
+    public bool ShowKidLoginView => KidLogin != null && !IsEditingKidLogin;
+    public bool ShowKidLoginCreate => KidLogin == null;
+
     // Add transaction form
     [ObservableProperty] private bool _showAddTransaction;
     [ObservableProperty] private string _txType = "credit";
@@ -55,10 +64,13 @@ public partial class KidDetailPageModel : ObservableObject
     [ObservableProperty] private DateTime? _goalWantByDate;
 
     public ObservableCollection<Transaction> Transactions { get; } = [];
+    public ObservableCollection<Transaction> RecentTransactions { get; } = [];
+    public ObservableCollection<Transaction> FutureTransactions { get; } = [];
     public ObservableCollection<RecurringTransaction> RecurringTransactions { get; } = [];
     public ObservableCollection<SavingsGoal> Goals { get; } = [];
     public ObservableCollection<GoalProjection> GoalProjections { get; } = [];
     public ObservableCollection<WeekSummary> WeeklySummary { get; } = [];
+    public ObservableCollection<BalanceChartPoint> ChartData { get; } = [];
 
     public List<string> Types { get; } = ["credit", "debit"];
     public List<string> Categories { get; } = ["", "allowance", "chore", "gift", "spending", "adjustment"];
@@ -73,6 +85,17 @@ public partial class KidDetailPageModel : ObservableObject
     partial void OnKidIdChanged(int value)
     {
         if (value > 0) LoadDataCommand.Execute(null);
+    }
+
+    partial void OnKidLoginChanged(KidUser? value)
+    {
+        OnPropertyChanged(nameof(ShowKidLoginView));
+        OnPropertyChanged(nameof(ShowKidLoginCreate));
+    }
+
+    partial void OnIsEditingKidLoginChanged(bool value)
+    {
+        OnPropertyChanged(nameof(ShowKidLoginView));
     }
 
     [RelayCommand]
@@ -96,7 +119,20 @@ public partial class KidDetailPageModel : ObservableObject
             Kid = kidTask.Result.Kid;
 
             Transactions.Clear();
-            foreach (var t in txTask.Result.Transactions) Transactions.Add(t);
+            RecentTransactions.Clear();
+            FutureTransactions.Clear();
+            var today = DateTime.Today.ToString("yyyy-MM-dd");
+            var future = new List<Transaction>();
+            foreach (var t in txTask.Result.Transactions)
+            {
+                Transactions.Add(t);
+                if (string.Compare(t.TransactionDate, today, StringComparison.Ordinal) > 0)
+                    future.Add(t);
+                else
+                    RecentTransactions.Add(t);
+            }
+            foreach (var t in future.OrderBy(t => t.TransactionDate))
+                FutureTransactions.Add(t);
             _hasMore = txTask.Result.Pagination.Page < txTask.Result.Pagination.TotalPages;
 
             RecurringTransactions.Clear();
@@ -110,6 +146,23 @@ public partial class KidDetailPageModel : ObservableObject
 
             WeeklySummary.Clear();
             foreach (var w in weeklyTask.Result.Weeks) WeeklySummary.Add(w);
+
+            ChartData.Clear();
+            var weeks = weeklyTask.Result.Weeks;
+            for (int i = 0; i < weeks.Count; i++)
+            {
+                var w = weeks[i];
+                var prevBalance = i > 0 ? weeks[i - 1].Balance : w.Balance - w.Credits + w.Debits;
+                ChartData.Add(new BalanceChartPoint
+                {
+                    Label = w.WeekEndShort,
+                    Balance = (double)w.Balance,
+                    CreditLow = (double)prevBalance,
+                    CreditHigh = (double)(prevBalance + w.Credits),
+                    DebitHigh = (double)(prevBalance + w.Credits),
+                    DebitLow = (double)w.Balance
+                });
+            }
 
             // Load kid login info
             try
@@ -190,6 +243,37 @@ public partial class KidDetailPageModel : ObservableObject
     }
 
     [RelayCommand]
+    private void StartEditKidLogin()
+    {
+        if (KidLogin == null) return;
+        EditKidLoginEmail = KidLogin.Email;
+        EditKidLoginPassword = "";
+        IsEditingKidLogin = true;
+    }
+
+    [RelayCommand]
+    private void CancelEditKidLogin()
+    {
+        IsEditingKidLogin = false;
+    }
+
+    [RelayCommand]
+    private async Task SaveKidLoginAsync()
+    {
+        if (KidLogin == null) return;
+        try
+        {
+            string? email = EditKidLoginEmail != KidLogin.Email ? EditKidLoginEmail : null;
+            string? password = !string.IsNullOrWhiteSpace(EditKidLoginPassword) ? EditKidLoginPassword : null;
+            if (email == null && password == null) { IsEditingKidLogin = false; return; }
+            var result = await _api.UpdateKidLoginAsync(KidLogin.Id, email: email, password: password);
+            KidLogin = result.KidUser;
+            IsEditingKidLogin = false;
+        }
+        catch (Exception ex) { await AppShell.DisplaySnackbarAsync(ex.Message); }
+    }
+
+    [RelayCommand]
     private async Task RemoveKidLoginAsync()
     {
         if (KidLogin == null) return;
@@ -232,8 +316,23 @@ public partial class KidDetailPageModel : ObservableObject
         try
         {
             _currentPage++;
+            var today = DateTime.Today.ToString("yyyy-MM-dd");
             var result = await _api.GetTransactionsAsync(KidId, page: _currentPage, perPage: 20);
-            foreach (var t in result.Transactions) Transactions.Add(t);
+            var needsResort = false;
+            foreach (var t in result.Transactions)
+            {
+                Transactions.Add(t);
+                if (string.Compare(t.TransactionDate, today, StringComparison.Ordinal) > 0)
+                    { FutureTransactions.Add(t); needsResort = true; }
+                else
+                    RecentTransactions.Add(t);
+            }
+            if (needsResort)
+            {
+                var sorted = FutureTransactions.OrderBy(t => t.TransactionDate).ToList();
+                FutureTransactions.Clear();
+                foreach (var t in sorted) FutureTransactions.Add(t);
+            }
             _hasMore = result.Pagination.Page < result.Pagination.TotalPages;
         }
         catch (Exception ex) { await AppShell.DisplaySnackbarAsync(ex.Message); }

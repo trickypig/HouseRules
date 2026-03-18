@@ -102,6 +102,16 @@ class User
         $stmt->execute($params);
     }
 
+    public static function updateEmail(PDO $db, int $id, string $email): void
+    {
+        $stmt = $db->prepare('UPDATE users SET email = :email, updated_at = :updated_at WHERE id = :id');
+        $stmt->execute([
+            'email'      => $email,
+            'updated_at' => date('Y-m-d H:i:s'),
+            'id'         => $id,
+        ]);
+    }
+
     public static function updatePassword(PDO $db, int $id, string $password): void
     {
         $hash = password_hash($password, PASSWORD_DEFAULT);

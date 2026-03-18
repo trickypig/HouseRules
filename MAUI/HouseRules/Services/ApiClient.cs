@@ -110,8 +110,8 @@ public class ApiClient
     public Task<KidUsersResponse> GetKidUsersAsync() =>
         GetAsync<KidUsersResponse>("/auth/kid-users");
 
-    public Task<KidUserResponse> UpdateKidLoginAsync(int id, string? password = null, string? displayName = null) =>
-        PutAsync<KidUserResponse>($"/auth/kid-login/{id}", new { password, display_name = displayName });
+    public Task<KidUserResponse> UpdateKidLoginAsync(int id, string? email = null, string? password = null, string? displayName = null) =>
+        PutAsync<KidUserResponse>($"/auth/kid-login/{id}", new { email, password, display_name = displayName });
 
     public Task DeleteKidLoginAsync(int id) =>
         DeleteAsync<object>($"/auth/kid-login/{id}");
