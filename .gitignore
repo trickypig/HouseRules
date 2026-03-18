@@ -5,3 +5,4 @@ frontend/dist/
 vendor/
 .claude/settings.local.json
 .vscode/sftp.json
+.claude/todo.md

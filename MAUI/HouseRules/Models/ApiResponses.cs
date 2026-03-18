@@ -91,11 +91,108 @@ public class WeekSummary
 public class BalanceChartPoint
 {
     public string Label { get; set; } = string.Empty;
-    public double Balance { get; set; }
+    public bool IsFuture { get; set; }
+
+    // Historical bar values (collapsed to zero-height for future points)
     public double CreditLow { get; set; }
     public double CreditHigh { get; set; }
     public double DebitHigh { get; set; }
     public double DebitLow { get; set; }
+
+    // Future bar values (collapsed to zero-height for historical points)
+    public double FutureCreditLow { get; set; }
+    public double FutureCreditHigh { get; set; }
+    public double FutureDebitHigh { get; set; }
+    public double FutureDebitLow { get; set; }
+
+    // Balance values — separate paths for historical vs future line series
+    public double Balance { get; set; }
+    public double HistBalance { get; set; }
+    public double FutureBalance { get; set; }
+
+    /// <summary>
+    /// Creates a historical chart point. Future bar properties are collapsed.
+    /// </summary>
+    public static BalanceChartPoint Historical(string label, double balance,
+        double creditLow, double creditHigh, double debitHigh, double debitLow)
+    {
+        return new BalanceChartPoint
+        {
+            Label = label, Balance = balance, IsFuture = false,
+            HistBalance = balance, FutureBalance = double.NaN,
+            CreditLow = creditLow, CreditHigh = creditHigh,
+            DebitHigh = debitHigh, DebitLow = debitLow,
+            // Collapsed future bars
+            FutureCreditLow = balance, FutureCreditHigh = balance,
+            FutureDebitHigh = balance, FutureDebitLow = balance,
+        };
+    }
+
+    /// <summary>
+    /// Creates a future chart point. Historical bar properties are collapsed.
+    /// </summary>
+    public static BalanceChartPoint Future(string label, double balance,
+        double creditLow, double creditHigh, double debitHigh, double debitLow)
+    {
+        return new BalanceChartPoint
+        {
+            Label = label, Balance = balance, IsFuture = true,
+            HistBalance = double.NaN, FutureBalance = balance,
+            // Collapsed historical bars
+            CreditLow = balance, CreditHigh = balance,
+            DebitHigh = balance, DebitLow = balance,
+            FutureCreditLow = creditLow, FutureCreditHigh = creditHigh,
+            FutureDebitHigh = debitHigh, FutureDebitLow = debitLow,
+        };
+    }
+
+    /// <summary>
+    /// Builds future chart points by bucketing future transactions into weeks.
+    /// </summary>
+    public static List<BalanceChartPoint> BuildFuturePoints(
+        IList<Transaction> futureTransactions, decimal lastBalance)
+    {
+        if (futureTransactions.Count == 0) return [];
+
+        var cutoff = DateTime.Today.AddMonths(1);
+        var weekMap = new SortedDictionary<string, (decimal credits, decimal debits)>();
+
+        foreach (var tx in futureTransactions)
+        {
+            if (!DateTime.TryParse(tx.TransactionDate, out var txDate) || txDate > cutoff)
+                continue;
+
+            var daysUntilSunday = ((int)DayOfWeek.Sunday - (int)txDate.DayOfWeek + 7) % 7;
+            var sunday = txDate.AddDays(daysUntilSunday);
+            var weekEnd = sunday.ToString("yyyy-MM-dd");
+
+            weekMap.TryGetValue(weekEnd, out var entry);
+            var amt = tx.Amount;
+            if (tx.Type == "credit")
+                entry.credits += amt;
+            else
+                entry.debits += amt;
+            weekMap[weekEnd] = entry;
+        }
+
+        if (weekMap.Count == 0) return [];
+
+        var result = new List<BalanceChartPoint>();
+        var bal = lastBalance;
+
+        foreach (var (weekEnd, (credits, debits)) in weekMap)
+        {
+            var prevBal = bal;
+            bal += credits - debits;
+            var label = DateTime.TryParse(weekEnd, out var d) ? d.ToString("MMM d") : weekEnd;
+
+            result.Add(Future(label, (double)bal,
+                (double)prevBal, (double)(prevBal + credits),
+                (double)(prevBal + credits), (double)bal));
+        }
+
+        return result;
+    }
 }
 
 public class RecurringListResponse

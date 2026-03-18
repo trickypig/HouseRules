@@ -10,7 +10,7 @@
             <Label Text="Balance Over Time" Style="{StaticResource Title3}" Margin="0,0,0,10" />
             <chart:SfCartesianChart x:Name="BalanceChart" HeightRequest="250">
                 <chart:SfCartesianChart.TrackballBehavior>
-                    <chart:ChartTrackballBehavior DisplayMode="GroupAllPoints" ShowMarkers="True" />
+                    <chart:ChartTrackballBehavior DisplayMode="NearestPoint" ShowMarkers="True" />
                 </chart:SfCartesianChart.TrackballBehavior>
                 <chart:SfCartesianChart.XAxes>
                     <chart:CategoryAxis LabelPlacement="BetweenTicks" ShowMajorGridLines="False">
@@ -29,25 +29,47 @@
                         </chart:NumericalAxis.MajorGridLineStyle>
                     </chart:NumericalAxis>
                 </chart:SfCartesianChart.YAxes>
-                <!-- Credit bars (green) — from prev balance up -->
+                <!-- Historical credit bars (green) -->
                 <chart:RangeColumnSeries x:Name="CreditSeries"
                                          XBindingPath="Label" High="CreditHigh" Low="CreditLow"
-                                         Fill="#39FF14" Width="0.4" Label="Credits"
-                                         EnableTooltip="False" />
-                <!-- Debit bars (red) — from peak down to final balance -->
+                                         Fill="#39FF14" Opacity="0.35" Width="0.4" Label="Credits"
+                                         ShowTrackballLabel="False" EnableTooltip="False" />
+                <!-- Historical debit bars (red) -->
                 <chart:RangeColumnSeries x:Name="DebitSeries"
                                          XBindingPath="Label" High="DebitHigh" Low="DebitLow"
-                                         Fill="#FF4444" Width="0.4" Label="Debits"
-                                         EnableTooltip="False" />
-                <!-- Balance line with markers -->
+                                         Fill="#FF4444" Opacity="0.35" Width="0.4" Label="Debits"
+                                         ShowTrackballLabel="False" EnableTooltip="False" />
+                <!-- Historical balance line (solid) -->
                 <chart:LineSeries x:Name="BalanceLine"
-                                  XBindingPath="Label" YBindingPath="Balance"
-                                  StrokeWidth="2" Fill="{StaticResource Primary}"
+                                  XBindingPath="Label" YBindingPath="HistBalance"
+                                  StrokeWidth="2.5" Fill="{StaticResource Primary}"
                                   Label="Balance" ShowMarkers="True" EnableTooltip="False">
                     <chart:LineSeries.MarkerSettings>
                         <chart:ChartMarkerSettings Type="Circle" Width="8" Height="8"
                                                     Fill="{StaticResource Primary}"
                                                     Stroke="White" StrokeWidth="2" />
+                    </chart:LineSeries.MarkerSettings>
+                </chart:LineSeries>
+                <!-- Future credit bars (green, faded) -->
+                <chart:RangeColumnSeries x:Name="FutureCreditSeries"
+                                         XBindingPath="Label" High="FutureCreditHigh" Low="FutureCreditLow"
+                                         Fill="#39FF14" Opacity="0.15" Width="0.4"
+                                         ShowTrackballLabel="False" EnableTooltip="False" IsVisibleOnLegend="False" />
+                <!-- Future debit bars (red, faded) -->
+                <chart:RangeColumnSeries x:Name="FutureDebitSeries"
+                                         XBindingPath="Label" High="FutureDebitHigh" Low="FutureDebitLow"
+                                         Fill="#FF4444" Opacity="0.15" Width="0.4"
+                                         ShowTrackballLabel="False" EnableTooltip="False" IsVisibleOnLegend="False" />
+                <!-- Future balance line (dashed) -->
+                <chart:LineSeries x:Name="FutureBalanceLine"
+                                  XBindingPath="Label" YBindingPath="FutureBalance"
+                                  StrokeWidth="2" Fill="{StaticResource Primary}" Opacity="0.6"
+                                  StrokeDashArray="6,4"
+                                  ShowMarkers="True" EnableTooltip="False" IsVisibleOnLegend="False">
+                    <chart:LineSeries.MarkerSettings>
+                        <chart:ChartMarkerSettings Type="Circle" Width="8" Height="8"
+                                                    Fill="White"
+                                                    Stroke="{StaticResource Primary}" StrokeWidth="2" />
                     </chart:LineSeries.MarkerSettings>
                 </chart:LineSeries>
                 <chart:SfCartesianChart.Legend>

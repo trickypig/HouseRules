@@ -49,9 +49,12 @@ public partial class KidMoneyPageModel : ObservableObject
         try
         {
             var dashTask = _api.GetMyDashboardAsync();
-            var txTask = _api.GetMyTransactionsAsync(page: 1, perPage: 20);
+            var today = DateTime.Today.ToString("yyyy-MM-dd");
+            var tomorrow = DateTime.Today.AddDays(1).ToString("yyyy-MM-dd");
+            var txTask = _api.GetMyTransactionsAsync(to: today, page: 1, perPage: 20);
+            var futureTxTask = _api.GetMyTransactionsAsync(from: tomorrow, perPage: 100);
             var weeklyTask = _api.GetMyWeeklySummaryAsync(12);
-            await Task.WhenAll(dashTask, txTask, weeklyTask);
+            await Task.WhenAll(dashTask, txTask, futureTxTask, weeklyTask);
 
             var data = dashTask.Result;
             Kid = data.Kid;
@@ -64,16 +67,9 @@ public partial class KidMoneyPageModel : ObservableObject
 
             RecentTransactions.Clear();
             FutureTransactions.Clear();
-            var today = DateTime.Today.ToString("yyyy-MM-dd");
-            var future = new List<Transaction>();
             foreach (var t in txTask.Result.Transactions)
-            {
-                if (string.Compare(t.TransactionDate, today, StringComparison.Ordinal) > 0)
-                    future.Add(t);
-                else
-                    RecentTransactions.Add(t);
-            }
-            foreach (var t in future.OrderBy(t => t.TransactionDate))
+                RecentTransactions.Add(t);
+            foreach (var t in futureTxTask.Result.Transactions.OrderBy(t => t.TransactionDate))
                 FutureTransactions.Add(t);
             _hasMore = txTask.Result.Pagination.Page < txTask.Result.Pagination.TotalPages;
 
@@ -86,16 +82,15 @@ public partial class KidMoneyPageModel : ObservableObject
             {
                 var w = weeks[i];
                 var prevBalance = i > 0 ? weeks[i - 1].Balance : w.Balance - w.Credits + w.Debits;
-                ChartData.Add(new BalanceChartPoint
-                {
-                    Label = w.WeekEndShort,
-                    Balance = (double)w.Balance,
-                    CreditLow = (double)prevBalance,
-                    CreditHigh = (double)(prevBalance + w.Credits),
-                    DebitHigh = (double)(prevBalance + w.Credits),
-                    DebitLow = (double)w.Balance
-                });
+                ChartData.Add(BalanceChartPoint.Historical(w.WeekEndShort, (double)w.Balance,
+                    (double)prevBalance, (double)(prevBalance + w.Credits),
+                    (double)(prevBalance + w.Credits), (double)w.Balance));
             }
+
+            var lastBalance = weeks.Count > 0 ? weeks[^1].Balance : Kid?.Balance ?? 0;
+            foreach (var fp in BalanceChartPoint.BuildFuturePoints(
+                         futureTxTask.Result.Transactions, lastBalance))
+                ChartData.Add(fp);
         }
         catch (UnauthorizedAccessException) { }
         catch (Exception ex) { await AppShell.DisplaySnackbarAsync(ex.Message); }
@@ -114,22 +109,10 @@ public partial class KidMoneyPageModel : ObservableObject
         try
         {
             _currentPage++;
-            var data = await _api.GetMyTransactionsAsync(page: _currentPage, perPage: 20);
             var today = DateTime.Today.ToString("yyyy-MM-dd");
-            var needsResort = false;
+            var data = await _api.GetMyTransactionsAsync(to: today, page: _currentPage, perPage: 20);
             foreach (var t in data.Transactions)
-            {
-                if (string.Compare(t.TransactionDate, today, StringComparison.Ordinal) > 0)
-                    { FutureTransactions.Add(t); needsResort = true; }
-                else
-                    RecentTransactions.Add(t);
-            }
-            if (needsResort)
-            {
-                var sorted = FutureTransactions.OrderBy(t => t.TransactionDate).ToList();
-                FutureTransactions.Clear();
-                foreach (var t in sorted) FutureTransactions.Add(t);
-            }
+                RecentTransactions.Add(t);
             _hasMore = data.Pagination.Page < data.Pagination.TotalPages;
         }
         catch (Exception ex) { await AppShell.DisplaySnackbarAsync(ex.Message); }

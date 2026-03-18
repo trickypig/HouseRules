@@ -34,10 +34,55 @@ public partial class BalanceChartView : ContentView
 
     private static void OnChartDataChanged(BindableObject bindable, object oldValue, object newValue)
     {
-        if (bindable is not BalanceChartView view || newValue is not IList data) return;
-        view.CreditSeries.ItemsSource = data;
-        view.DebitSeries.ItemsSource = data;
-        view.BalanceLine.ItemsSource = data;
+        if (bindable is not BalanceChartView view) return;
+
+        if (oldValue is INotifyCollectionChanged oldCollection)
+            oldCollection.CollectionChanged -= view.OnChartDataCollectionChanged;
+
+        if (newValue is INotifyCollectionChanged newCollection)
+            newCollection.CollectionChanged += view.OnChartDataCollectionChanged;
+
+        if (newValue is IList data)
+            view.UpdateSeriesData(data);
+    }
+
+    private void OnChartDataCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        if (sender is IList data)
+            UpdateSeriesData(data);
+    }
+
+    private void UpdateSeriesData(IList data)
+    {
+        // Set the bridge: last historical point also gets FutureBalance
+        // so the dashed future line connects seamlessly from the solid line.
+        BalanceChartPoint? lastHistorical = null;
+        bool hasFuture = false;
+        foreach (var item in data)
+        {
+            if (item is not BalanceChartPoint pt) continue;
+            if (!pt.IsFuture)
+                lastHistorical = pt;
+            else
+                hasFuture = true;
+        }
+        if (lastHistorical != null && hasFuture)
+            lastHistorical.FutureBalance = lastHistorical.Balance;
+
+        // All 6 series share the same ItemsSource with consistent x-axis labels.
+        // Historical bars/line use CreditHigh/CreditLow/HistBalance (collapsed for future points).
+        // Future bars/line use FutureCreditHigh/FutureCreditLow/FutureBalance (collapsed for historical).
+        // Need a new list reference each time so the chart re-reads values.
+        var source = new List<BalanceChartPoint>();
+        foreach (var item in data)
+            if (item is BalanceChartPoint pt) source.Add(pt);
+
+        CreditSeries.ItemsSource = source;
+        DebitSeries.ItemsSource = source;
+        BalanceLine.ItemsSource = source;
+        FutureCreditSeries.ItemsSource = source;
+        FutureDebitSeries.ItemsSource = source;
+        FutureBalanceLine.ItemsSource = source;
     }
 
     private static void OnGoalsChanged(BindableObject bindable, object oldValue, object newValue)
@@ -60,23 +105,44 @@ public partial class BalanceChartView : ContentView
 
     private void OnTrackballCreated(object? sender, TrackballEventArgs e)
     {
-        BalanceChartPoint? dataPoint = null;
+        if (e.TrackballPointsInfo.Count == 0) return;
 
+        // Get the data point from the first info entry
+        BalanceChartPoint? dataPoint = null;
         foreach (var info in e.TrackballPointsInfo)
         {
             if (info.DataItem is BalanceChartPoint pt)
+            {
                 dataPoint = pt;
-            info.Label = string.Empty;
+                break;
+            }
         }
 
-        if (dataPoint == null || e.TrackballPointsInfo.Count == 0) return;
+        // Clear all labels — we'll set just one
+        foreach (var info in e.TrackballPointsInfo)
+            info.Label = string.Empty;
 
-        var balanceInfo = e.TrackballPointsInfo[^1];
-        var credits = dataPoint.CreditHigh - dataPoint.CreditLow;
-        var debits = dataPoint.DebitHigh - dataPoint.DebitLow;
+        if (dataPoint == null) return;
+
+        // Use the correct bar values depending on historical vs future
+        double credits, debits;
+        if (dataPoint.IsFuture)
+        {
+            credits = dataPoint.FutureCreditHigh - dataPoint.FutureCreditLow;
+            debits = dataPoint.FutureDebitHigh - dataPoint.FutureDebitLow;
+        }
+        else
+        {
+            credits = dataPoint.CreditHigh - dataPoint.CreditLow;
+            debits = dataPoint.DebitHigh - dataPoint.DebitLow;
+        }
+
         var prev = dataPoint.Balance + debits - credits;
+        var suffix = dataPoint.IsFuture ? " (projected)" : "";
 
-        balanceInfo.Label = $"Prev Week: {prev:C2}\nEarned: {credits:C2}\nSpent: {debits:C2}\nBalance: {dataPoint.Balance:C2}";
+        // Show the label on the first info entry only
+        e.TrackballPointsInfo[0].Label =
+            $"Prev Week: {prev:C2}\nEarned: {credits:C2}\nSpent: {debits:C2}\nBalance: {dataPoint.Balance:C2}{suffix}";
     }
 
     private void UpdateGoalAnnotations()

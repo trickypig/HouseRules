@@ -127,11 +127,11 @@ export default function BalanceChart({ data, color, futureData, goals }: Balance
           const gy = toY(g.target_amount);
           return (
             <g key={`goal-${i}`}>
-              <line x1={PAD_L} x2={W - 5} y1={gy} y2={gy} stroke="var(--color-text-muted)" strokeWidth={0.5} strokeDasharray="5,3" opacity={0.7} />
-              <text x={W - PAD_R + 4} y={gy - 4} fontSize={8} fill="var(--color-warning)" textAnchor="start" fontWeight={600}>
+              <line x1={PAD_L} x2={W - 5} y1={gy} y2={gy} stroke="#00F0FF" strokeWidth={0.5} strokeDasharray="5,3" opacity={0.7} />
+              <text x={W - PAD_R + 4} y={gy - 4} fontSize={8} fill="#00F0FF" textAnchor="start" fontWeight={600}>
                 {g.name}
               </text>
-              <text x={W - PAD_R + 4} y={gy + 8} fontSize={8} fill="var(--color-warning)" textAnchor="start">
+              <text x={W - PAD_R + 4} y={gy + 8} fontSize={8} fill="#00F0FF" textAnchor="start">
                 {formatCompact(g.target_amount)}
               </text>
             </g>

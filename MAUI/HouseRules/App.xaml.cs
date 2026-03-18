@@ -22,6 +22,35 @@ namespace HouseRules
                 await CheckStoredAuthAsync();
             };
 
+#if WINDOWS
+            window.Created += (s, e) =>
+            {
+                var nativeWindow = (window.Handler?.PlatformView as Microsoft.UI.Xaml.Window)!;
+                var appWindow = nativeWindow.AppWindow;
+                var titleBar = appWindow.TitleBar;
+
+                // Dark title bar to match app theme
+                var bg = global::Windows.UI.Color.FromArgb(255, 23, 23, 26);       // #17171A
+                var fg = global::Windows.UI.Color.FromArgb(255, 230, 230, 230);    // light text
+                var hoverBg = global::Windows.UI.Color.FromArgb(255, 40, 40, 50);
+                var pressedBg = global::Windows.UI.Color.FromArgb(255, 50, 50, 60);
+                var inactive = global::Windows.UI.Color.FromArgb(255, 140, 140, 140);
+
+                titleBar.BackgroundColor = bg;
+                titleBar.ForegroundColor = fg;
+                titleBar.InactiveBackgroundColor = bg;
+                titleBar.InactiveForegroundColor = inactive;
+                titleBar.ButtonBackgroundColor = bg;
+                titleBar.ButtonForegroundColor = fg;
+                titleBar.ButtonHoverBackgroundColor = hoverBg;
+                titleBar.ButtonHoverForegroundColor = fg;
+                titleBar.ButtonPressedBackgroundColor = pressedBg;
+                titleBar.ButtonPressedForegroundColor = fg;
+                titleBar.ButtonInactiveBackgroundColor = bg;
+                titleBar.ButtonInactiveForegroundColor = inactive;
+            };
+#endif
+
             return window;
         }
 

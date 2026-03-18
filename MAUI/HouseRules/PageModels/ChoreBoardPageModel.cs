@@ -30,8 +30,9 @@ public partial class ChoreBoardPageModel : ObservableObject
     public ObservableCollection<ChoreInstance> TodayInstances { get; } = [];
     public ObservableCollection<ChoreInstance> UpcomingInstances { get; } = [];
 
-    // For kid assignment picker
+    // For kid assignment picker (includes "Unassigned" sentinel with Id=0)
     public ObservableCollection<Kid> Kids { get; } = [];
+    private static readonly Kid _unassignedKid = new() { Id = 0, Name = "Unassigned" };
 
     public bool IsParent => _auth.IsParent;
 
@@ -79,6 +80,7 @@ public partial class ChoreBoardPageModel : ObservableObject
                 {
                     var kidsResult = await _api.GetKidsAsync();
                     Kids.Clear();
+                    Kids.Add(_unassignedKid);
                     foreach (var k in kidsResult.Kids) Kids.Add(k);
                 }
                 catch { /* not critical */ }
@@ -118,7 +120,7 @@ public partial class ChoreBoardPageModel : ObservableObject
         ChoreFrequency = template.Frequency ?? "one-time";
         ChoreDayOfWeek = template.DayOfWeek ?? 0;
         ChoreDayOfMonth = template.DayOfMonth ?? 1;
-        ChoreAssignedKid = Kids.FirstOrDefault(k => k.Id == template.AssignedKidId);
+        ChoreAssignedKid = Kids.FirstOrDefault(k => k.Id == template.AssignedKidId) ?? _unassignedKid;
         if (DateTime.TryParse(template.StartDate, out var sd)) ChoreStartDate = sd;
         ShowChoreForm = true;
     }
@@ -132,7 +134,7 @@ public partial class ChoreBoardPageModel : ObservableObject
         ChoreFrequency = "one-time";
         ChoreDayOfWeek = 0;
         ChoreDayOfMonth = 1;
-        ChoreAssignedKid = null;
+        ChoreAssignedKid = _unassignedKid;
         ChoreStartDate = DateTime.Today;
         ChoreEndDate = null;
     }
@@ -143,6 +145,7 @@ public partial class ChoreBoardPageModel : ObservableObject
         if (string.IsNullOrWhiteSpace(ChoreTitle)) return;
         decimal? amount = decimal.TryParse(ChoreAmountText, out var a) ? a : null;
         string? freq = ChoreFrequency == "one-time" ? null : ChoreFrequency;
+        int? assignedKidId = ChoreAssignedKid?.Id is > 0 ? ChoreAssignedKid.Id : null;
 
         try
         {
@@ -153,7 +156,7 @@ public partial class ChoreBoardPageModel : ObservableObject
                     frequency: freq,
                     dayOfWeek: freq is "weekly" or "biweekly" ? ChoreDayOfWeek : null,
                     dayOfMonth: freq == "monthly" ? ChoreDayOfMonth : null,
-                    assignedKidId: ChoreAssignedKid?.Id,
+                    assignedKidId: assignedKidId,
                     startDate: ChoreStartDate.ToString("yyyy-MM-dd"),
                     endDate: ChoreEndDate?.ToString("yyyy-MM-dd"));
             }
@@ -163,7 +166,7 @@ public partial class ChoreBoardPageModel : ObservableObject
                     frequency: freq,
                     dayOfWeek: freq is "weekly" or "biweekly" ? ChoreDayOfWeek : null,
                     dayOfMonth: freq == "monthly" ? ChoreDayOfMonth : null,
-                    assignedKidId: ChoreAssignedKid?.Id,
+                    assignedKidId: assignedKidId,
                     startDate: ChoreStartDate.ToString("yyyy-MM-dd"),
                     endDate: ChoreEndDate?.ToString("yyyy-MM-dd"));
             }

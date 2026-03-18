@@ -21,28 +21,25 @@
         <ScrollView>
             <VerticalStackLayout Spacing="15" Padding="{StaticResource LayoutPadding}">
 
-                <!-- Kid Header Card -->
-                <Border Style="{StaticResource CardStyle}">
-                    <!-- View mode -->
-                    <Grid IsVisible="{Binding IsEditingKid, Converter={StaticResource InvertedBoolConverter}}">
-                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="15">
-                            <Border StrokeShape="RoundRectangle 25" WidthRequest="50" HeightRequest="50"
-                                    BackgroundColor="{Binding Kid.Color, Converter={StaticResource ColorConverter}}">
-                                <Label Text="{Binding Kid.Avatar}" FontSize="24" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
-                            </Border>
-                            <VerticalStackLayout Grid.Column="1" VerticalOptions="Center">
-                                <Label Text="{Binding Kid.Name}" Style="{StaticResource Title2}" />
-                                <Label Text="{Binding Kid.Balance, Converter={StaticResource CurrencyConverter}}"
-                                       Style="{StaticResource Title3}"
-                                       TextColor="{Binding Kid.Balance, Converter={StaticResource BalanceColorConverter}}" />
-                            </VerticalStackLayout>
-                            <Button Grid.Column="2" Text="Edit" Command="{Binding StartEditKidCommand}"
-                                    BackgroundColor="Transparent" TextColor="{StaticResource Primary}" VerticalOptions="Center" />
-                        </Grid>
+                <!-- Kid Header Card (view mode) -->
+                <Border Style="{StaticResource CardStyle}" IsVisible="{Binding IsEditingKid, Converter={StaticResource InvertedBoolConverter}}">
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="15">
+                        <Border StrokeShape="RoundRectangle 25" WidthRequest="50" HeightRequest="50"
+                                BackgroundColor="{Binding Kid.Color, Converter={StaticResource ColorConverter}}">
+                            <Label Text="{Binding Kid.Avatar}" FontSize="24" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
+                        </Border>
+                        <VerticalStackLayout Grid.Column="1" VerticalOptions="Center">
+                            <Label Text="{Binding Kid.Name}" Style="{StaticResource Title2}" />
+                            <Label Text="{Binding Kid.Balance, Converter={StaticResource CurrencyConverter}}"
+                                   Style="{StaticResource Title3}"
+                                   TextColor="{Binding Kid.Balance, Converter={StaticResource BalanceColorConverter}}" />
+                        </VerticalStackLayout>
+                        <Button Grid.Column="2" Text="Edit" Command="{Binding StartEditKidCommand}"
+                                BackgroundColor="Transparent" TextColor="{StaticResource Primary}" VerticalOptions="Center" />
                     </Grid>
                 </Border>
 
-                <!-- Kid Edit Form -->
+                <!-- Kid Edit Form (consolidated: profile + login) -->
                 <Border Style="{StaticResource CardStyle}" IsVisible="{Binding IsEditingKid}">
                     <VerticalStackLayout Spacing="10">
                         <Label Text="Edit Kid" Style="{StaticResource Title3}" />
@@ -57,56 +54,20 @@
                                 <Entry Text="{Binding EditKidAvatar}" Placeholder="emoji" />
                             </VerticalStackLayout>
                         </Grid>
+
+                        <!-- Login fields -->
+                        <Label Text="Kid Login" Style="{StaticResource Title3}" Margin="0,5,0,0" />
+                        <Entry Placeholder="Login email" Text="{Binding EditKidLoginEmail}" Keyboard="Email" />
+                        <Entry Placeholder="New password (leave blank to keep)" IsVisible="{Binding HasKidLogin}"
+                               Text="{Binding EditKidLoginPassword}" IsPassword="True" />
+                        <Entry Placeholder="Password (min 4 chars)" IsVisible="{Binding HasKidLogin, Converter={StaticResource InvertedBoolConverter}}"
+                               Text="{Binding EditKidLoginPassword}" IsPassword="True" />
+
                         <HorizontalStackLayout Spacing="10">
                             <Button Text="Save" Command="{Binding SaveKidCommand}" />
                             <Button Text="Cancel" Command="{Binding CancelEditKidCommand}"
                                     BackgroundColor="Transparent" TextColor="{StaticResource Primary}" />
-                            <Button Text="Delete Kid" Command="{Binding DeleteKidCommand}"
-                                    BackgroundColor="{StaticResource NeonDanger}" HorizontalOptions="End" />
                         </HorizontalStackLayout>
-                    </VerticalStackLayout>
-                </Border>
-
-                <!-- Kid Login Section -->
-                <Border Style="{StaticResource CardStyle}">
-                    <VerticalStackLayout Spacing="8">
-                        <Label Text="Kid Login" Style="{StaticResource Title3}" />
-
-                        <!-- Has login - view mode -->
-                        <Grid IsVisible="{Binding ShowKidLoginView}"
-                              ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
-                            <Label Text="{Binding KidLogin.Email}" Style="{StaticResource Body1}" VerticalOptions="Center" />
-                            <Button Grid.Column="1" Text="Edit" Command="{Binding StartEditKidLoginCommand}"
-                                    BackgroundColor="Transparent" TextColor="{StaticResource Primary}" Padding="10,5" />
-                            <Button Grid.Column="2" Text="Remove" Command="{Binding RemoveKidLoginCommand}"
-                                    BackgroundColor="{StaticResource NeonDanger}" Padding="10,5" />
-                        </Grid>
-
-                        <!-- Has login - edit mode -->
-                        <VerticalStackLayout IsVisible="{Binding IsEditingKidLogin}" Spacing="8">
-                            <Entry Placeholder="Email" Text="{Binding EditKidLoginEmail}" Keyboard="Email" />
-                            <Entry Placeholder="New password (leave blank to keep)" Text="{Binding EditKidLoginPassword}" IsPassword="True" />
-                            <HorizontalStackLayout Spacing="10">
-                                <Button Text="Save" Command="{Binding SaveKidLoginCommand}" Padding="10,5" />
-                                <Button Text="Cancel" Command="{Binding CancelEditKidLoginCommand}"
-                                        BackgroundColor="Transparent" TextColor="{StaticResource Primary}" Padding="10,5" />
-                            </HorizontalStackLayout>
-                        </VerticalStackLayout>
-
-                        <!-- No login -->
-                        <VerticalStackLayout IsVisible="{Binding ShowKidLoginCreate}">
-                            <Button Text="Create Kid Login" Command="{Binding ToggleKidLoginFormCommand}"
-                                    IsVisible="{Binding ShowKidLoginForm, Converter={StaticResource InvertedBoolConverter}}" />
-                            <VerticalStackLayout IsVisible="{Binding ShowKidLoginForm}" Spacing="8">
-                                <Entry Placeholder="Email" Text="{Binding KidLoginEmail}" Keyboard="Email" />
-                                <Entry Placeholder="Password (min 4 chars)" Text="{Binding KidLoginPassword}" IsPassword="True" />
-                                <HorizontalStackLayout Spacing="10">
-                                    <Button Text="Create Login" Command="{Binding CreateKidLoginCommand}" />
-                                    <Button Text="Cancel" Command="{Binding ToggleKidLoginFormCommand}"
-                                            BackgroundColor="Transparent" TextColor="{StaticResource Primary}" />
-                                </HorizontalStackLayout>
-                            </VerticalStackLayout>
-                        </VerticalStackLayout>
                     </VerticalStackLayout>
                 </Border>
 

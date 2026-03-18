@@ -56,13 +56,7 @@ export default function KidDetailPage() {
   const [projections, setProjections] = useState<GoalProjection[]>([]);
 
 
-  // Kid login form
-  const [showKidLoginForm, setShowKidLoginForm] = useState(false);
-  const [kidEmail, setKidEmail] = useState('');
-  const [kidPassword, setKidPassword] = useState('');
-
-  // Edit kid login
-  const [editingKidLogin, setEditingKidLogin] = useState(false);
+  // Kid login (shown in consolidated edit form)
   const [editKidEmail, setEditKidEmail] = useState('');
   const [editKidPassword, setEditKidPassword] = useState('');
 
@@ -110,6 +104,25 @@ export default function KidDetailPage() {
     e.preventDefault();
     try {
       await api.updateKid(kidId, { name: editName, color: editColor, avatar: editAvatar });
+
+      // Handle login changes
+      if (kidUser) {
+        const data: { email?: string; password?: string } = {};
+        if (editKidEmail !== kidUser.email) data.email = editKidEmail;
+        if (editKidPassword) data.password = editKidPassword;
+        if (Object.keys(data).length > 0) {
+          const res = await api.updateKidLogin(kidUser.id, data);
+          setKidUser(res.kid_user);
+        }
+      } else if (editKidEmail && editKidPassword) {
+        await api.createKidLogin({
+          kid_id: kidId,
+          email: editKidEmail,
+          password: editKidPassword,
+          display_name: editName,
+        });
+      }
+
       setEditing(false);
       loadData();
     } catch (err: unknown) {
@@ -311,57 +324,7 @@ export default function KidDetailPage() {
     }
   }
 
-  async function handleCreateKidLogin(e: FormEvent) {
-    e.preventDefault();
-    try {
-      await api.createKidLogin({
-        kid_id: kidId,
-        email: kidEmail,
-        password: kidPassword,
-        display_name: kid?.name,
-      });
-      setShowKidLoginForm(false);
-      setKidEmail('');
-      setKidPassword('');
-      loadData();
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to create login');
-    }
-  }
 
-  async function handleDeleteKidLogin() {
-    if (!kidUser) return;
-    if (!confirm('Delete this kid\'s login account?')) return;
-    try {
-      await api.deleteKidLogin(kidUser.id);
-      setKidUser(null);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to delete login');
-    }
-  }
-
-  function startEditKidLogin() {
-    if (!kidUser) return;
-    setEditKidEmail(kidUser.email);
-    setEditKidPassword('');
-    setEditingKidLogin(true);
-  }
-
-  async function handleUpdateKidLogin(e: FormEvent) {
-    e.preventDefault();
-    if (!kidUser) return;
-    try {
-      const data: { email?: string; password?: string } = {};
-      if (editKidEmail !== kidUser.email) data.email = editKidEmail;
-      if (editKidPassword) data.password = editKidPassword;
-      if (Object.keys(data).length === 0) { setEditingKidLogin(false); return; }
-      const res = await api.updateKidLogin(kidUser.id, data);
-      setKidUser(res.kid_user);
-      setEditingKidLogin(false);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to update login');
-    }
-  }
 
   async function loadPage(page: number) {
     try {
@@ -514,10 +477,20 @@ export default function KidDetailPage() {
                 <input type="text" value={editAvatar} onChange={e => setEditAvatar(e.target.value)} style={{ width: '80px' }} />
               </div>
             </div>
+            <h3 style={{ marginTop: '0.75rem', marginBottom: '0.25rem' }}>Kid Login</h3>
+            <div className="form-row">
+              <div className="form-group form-group-grow">
+                <label>Login Email</label>
+                <input type="email" value={editKidEmail} onChange={e => setEditKidEmail(e.target.value)} placeholder="kid@example.com" />
+              </div>
+              <div className="form-group form-group-grow">
+                <label>{kidUser ? 'New Password (leave blank to keep)' : 'Password (min 4 chars)'}</label>
+                <input type="text" value={editKidPassword} onChange={e => setEditKidPassword(e.target.value)} placeholder={kidUser ? 'Leave blank to keep current' : 'At least 4 characters'} minLength={kidUser ? undefined : 4} />
+              </div>
+            </div>
             <div className="form-actions">
               <button type="submit" className="btn btn-primary">Save</button>
               <button type="button" className="btn btn-outline" onClick={() => setEditing(false)}>Cancel</button>
-              <button type="button" className="btn btn-danger" onClick={handleDeleteKid}>Delete Kid</button>
             </div>
           </form>
         ) : (
@@ -537,67 +510,7 @@ export default function KidDetailPage() {
                 </div>
               </div>
             </div>
-            <button onClick={() => setEditing(true)} className="btn btn-outline">Edit</button>
-          </div>
-        )}
-      </div>
-
-      {/* Kid Login Section */}
-      <div className="card" style={{ marginBottom: '1.5rem' }}>
-        <div className="section-header" style={{ marginBottom: '0.75rem' }}>
-          <h2>Kid Login</h2>
-        </div>
-        {kidUser ? (
-          editingKidLogin ? (
-            <form onSubmit={handleUpdateKidLogin}>
-              <div className="form-row">
-                <div className="form-group form-group-grow">
-                  <label>Email</label>
-                  <input type="email" value={editKidEmail} onChange={e => setEditKidEmail(e.target.value)} required />
-                </div>
-                <div className="form-group form-group-grow">
-                  <label>New Password (leave blank to keep current)</label>
-                  <input type="text" value={editKidPassword} onChange={e => setEditKidPassword(e.target.value)} placeholder="Leave blank to keep current" minLength={4} />
-                </div>
-              </div>
-              <div className="form-actions">
-                <button type="submit" className="btn btn-primary">Save</button>
-                <button type="button" className="btn btn-outline" onClick={() => setEditingKidLogin(false)}>Cancel</button>
-              </div>
-            </form>
-          ) : (
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <p><strong>{kidUser.email}</strong></p>
-                <p className="text-muted">{kid.name} can log in with this account to view their balance and request money.</p>
-              </div>
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <button onClick={startEditKidLogin} className="btn btn-sm btn-outline">Edit</button>
-                <button onClick={handleDeleteKidLogin} className="btn btn-sm btn-ghost">Remove</button>
-              </div>
-            </div>
-          )
-        ) : showKidLoginForm ? (
-          <form onSubmit={handleCreateKidLogin}>
-            <div className="form-row">
-              <div className="form-group form-group-grow">
-                <label>Email</label>
-                <input type="email" value={kidEmail} onChange={e => setKidEmail(e.target.value)} required placeholder="kid@example.com" />
-              </div>
-              <div className="form-group form-group-grow">
-                <label>Password</label>
-                <input type="text" value={kidPassword} onChange={e => setKidPassword(e.target.value)} required placeholder="At least 4 characters" minLength={4} />
-              </div>
-            </div>
-            <div className="form-actions">
-              <button type="submit" className="btn btn-primary">Create Login</button>
-              <button type="button" className="btn btn-outline" onClick={() => setShowKidLoginForm(false)}>Cancel</button>
-            </div>
-          </form>
-        ) : (
-          <div>
-            <p className="text-muted">No login account for {kid.name}.</p>
-            <button onClick={() => setShowKidLoginForm(true)} className="btn btn-sm btn-outline">Create Kid Login</button>
+            <button onClick={() => { setEditKidEmail(kidUser?.email ?? ''); setEditKidPassword(''); setEditing(true); }} className="btn btn-outline">Edit</button>
           </div>
         )}
       </div>

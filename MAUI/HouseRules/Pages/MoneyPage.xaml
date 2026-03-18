@@ -75,6 +75,9 @@
                 <Label Text="Recent Activity" Style="{StaticResource Title2}"
                        IsVisible="{Binding RecentTransactions.Count, Converter={StaticResource IsNotNullConverter}}" />
                 <CollectionView ItemsSource="{Binding RecentTransactions}" SelectionMode="None">
+                    <CollectionView.ItemsLayout>
+                        <LinearItemsLayout Orientation="Vertical" ItemSpacing="8" />
+                    </CollectionView.ItemsLayout>
                     <CollectionView.ItemTemplate>
                         <DataTemplate x:DataType="models:Transaction">
                             <Border Style="{StaticResource CardStyle}" Margin="0,0,0,5">

@@ -73,6 +73,9 @@
                 <Label Text="Awaiting Verification" Style="{StaticResource Title2}"
                        IsVisible="{Binding AwaitingVerification.Count, Converter={StaticResource IsNotNullConverter}}" />
                 <CollectionView ItemsSource="{Binding AwaitingVerification}" SelectionMode="None">
+                    <CollectionView.ItemsLayout>
+                        <LinearItemsLayout Orientation="Vertical" ItemSpacing="8" />
+                    </CollectionView.ItemsLayout>
                     <CollectionView.ItemTemplate>
                         <DataTemplate x:DataType="models:ChoreInstance">
                             <Border Style="{StaticResource CardStyle}" Margin="0,0,0,5">
@@ -106,6 +109,9 @@
                 <!-- Today -->
                 <Label Text="Today" Style="{StaticResource Title2}" />
                 <CollectionView ItemsSource="{Binding TodayInstances}" SelectionMode="None">
+                    <CollectionView.ItemsLayout>
+                        <LinearItemsLayout Orientation="Vertical" ItemSpacing="8" />
+                    </CollectionView.ItemsLayout>
                     <CollectionView.ItemTemplate>
                         <DataTemplate x:DataType="models:ChoreInstance">
                             <Border Style="{StaticResource CardStyle}" Margin="0,0,0,5">
@@ -129,7 +135,7 @@
                         </DataTemplate>
                     </CollectionView.ItemTemplate>
                     <CollectionView.EmptyView>
-                        <Label Text="No chores for today" Style="{StaticResource Body1}" Opacity="0.5" Margin="0,5" />
+                        <Label Text="No chores for today" Style="{StaticResource Body1}" Opacity="0.7" Margin="0,5" />
                     </CollectionView.EmptyView>
                 </CollectionView>
 
@@ -137,6 +143,9 @@
                 <Label Text="Upcoming" Style="{StaticResource Title2}"
                        IsVisible="{Binding UpcomingInstances.Count, Converter={StaticResource IsNotNullConverter}}" />
                 <CollectionView ItemsSource="{Binding UpcomingInstances}" SelectionMode="None">
+                    <CollectionView.ItemsLayout>
+                        <LinearItemsLayout Orientation="Vertical" ItemSpacing="8" />
+                    </CollectionView.ItemsLayout>
                     <CollectionView.ItemTemplate>
                         <DataTemplate x:DataType="models:ChoreInstance">
                             <Border Style="{StaticResource CardStyle}" Margin="0,0,0,5">
@@ -158,6 +167,9 @@
                 <!-- Templates -->
                 <Label Text="Chore Templates" Style="{StaticResource Title2}" IsVisible="{Binding IsParent}" />
                 <CollectionView ItemsSource="{Binding Templates}" SelectionMode="None" IsVisible="{Binding IsParent}">
+                    <CollectionView.ItemsLayout>
+                        <LinearItemsLayout Orientation="Vertical" ItemSpacing="8" />
+                    </CollectionView.ItemsLayout>
                     <CollectionView.ItemTemplate>
                         <DataTemplate x:DataType="models:ChoreTemplate">
                             <Border Style="{StaticResource CardStyle}" Margin="0,0,0,5">

@@ -17,40 +17,50 @@
 
     <!-- Parent Tabs -->
     <TabBar x:Name="ParentTabs" Route="parent">
-        <ShellContent Title="Dashboard" Route="parent-dashboard"
-                      Icon="{StaticResource IconDashboard}"
-                      ContentTemplate="{DataTemplate pages:DashboardPage}" />
-        <ShellContent Title="Money" Route="parent-money"
-                      Icon="{StaticResource IconMoney}"
-                      ContentTemplate="{DataTemplate pages:MoneyPage}" />
-        <ShellContent Title="Chores" Route="parent-chores"
-                      Icon="{StaticResource IconChores}"
-                      ContentTemplate="{DataTemplate pages:ChoreBoardPage}" />
-        <ShellContent Title="Shopping" Route="parent-shopping"
-                      Icon="{StaticResource IconShopping}"
-                      ContentTemplate="{DataTemplate pages:ShoppingListsPage}" />
-        <ShellContent Title="Settings" Route="parent-settings"
-                      Icon="{StaticResource IconSettings}"
-                      ContentTemplate="{DataTemplate pages:SettingsPage}" />
+        <Tab Title="Dashboard" Icon="{StaticResource IconDashboard}">
+            <ShellContent Route="parent-dashboard"
+                          ContentTemplate="{DataTemplate pages:DashboardPage}" />
+        </Tab>
+        <Tab Title="Money" Icon="{StaticResource IconMoney}">
+            <ShellContent Route="parent-money"
+                          ContentTemplate="{DataTemplate pages:MoneyPage}" />
+        </Tab>
+        <Tab Title="Chores" Icon="{StaticResource IconChores}">
+            <ShellContent Route="parent-chores"
+                          ContentTemplate="{DataTemplate pages:ChoreBoardPage}" />
+        </Tab>
+        <Tab Title="Shopping" Icon="{StaticResource IconShopping}">
+            <ShellContent Route="parent-shopping"
+                          ContentTemplate="{DataTemplate pages:ShoppingListsPage}" />
+        </Tab>
+        <Tab Title="Settings" Icon="{StaticResource IconSettings}">
+            <ShellContent Route="parent-settings"
+                          ContentTemplate="{DataTemplate pages:SettingsPage}" />
+        </Tab>
     </TabBar>
 
     <!-- Kid Tabs -->
     <TabBar x:Name="KidTabs" Route="kid">
-        <ShellContent Title="Dashboard" Route="kid-dashboard"
-                      Icon="{StaticResource IconDashboard}"
-                      ContentTemplate="{DataTemplate pages:KidDashboardPage}" />
-        <ShellContent Title="My Money" Route="kid-money"
-                      Icon="{StaticResource IconMoney}"
-                      ContentTemplate="{DataTemplate pages:KidMoneyPage}" />
-        <ShellContent Title="Chores" Route="kid-chores"
-                      Icon="{StaticResource IconChores}"
-                      ContentTemplate="{DataTemplate pages:KidChoresPage}" />
-        <ShellContent Title="Shopping" Route="kid-shopping"
-                      Icon="{StaticResource IconShopping}"
-                      ContentTemplate="{DataTemplate pages:ShoppingListsPage}" />
-        <ShellContent Title="Settings" Route="kid-settings"
-                      Icon="{StaticResource IconSettings}"
-                      ContentTemplate="{DataTemplate pages:SettingsPage}" />
+        <Tab Title="Dashboard" Icon="{StaticResource IconDashboard}">
+            <ShellContent Route="kid-dashboard"
+                          ContentTemplate="{DataTemplate pages:KidDashboardPage}" />
+        </Tab>
+        <Tab Title="My Money" Icon="{StaticResource IconMoney}">
+            <ShellContent Route="kid-money"
+                          ContentTemplate="{DataTemplate pages:KidMoneyPage}" />
+        </Tab>
+        <Tab Title="Chores" Icon="{StaticResource IconChores}">
+            <ShellContent Route="kid-chores"
+                          ContentTemplate="{DataTemplate pages:KidChoresPage}" />
+        </Tab>
+        <Tab Title="Shopping" Icon="{StaticResource IconShopping}">
+            <ShellContent Route="kid-shopping"
+                          ContentTemplate="{DataTemplate pages:ShoppingListsPage}" />
+        </Tab>
+        <Tab Title="Settings" Icon="{StaticResource IconSettings}">
+            <ShellContent Route="kid-settings"
+                          ContentTemplate="{DataTemplate pages:SettingsPage}" />
+        </Tab>
     </TabBar>
 
 </Shell>

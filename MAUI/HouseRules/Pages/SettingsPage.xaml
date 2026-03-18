@@ -21,7 +21,7 @@
                     <Label Text="Family Display Name" Style="{StaticResource Caption1}" />
                     <Entry Text="{Binding FamilyDisplayName}" Placeholder='e.g. "Mom", "Dad"' />
                     <Label Text="What your kids see (e.g. Dad, Mom). Leave empty to use your display name."
-                           Style="{StaticResource Caption2}" Opacity="0.5" />
+                           Style="{StaticResource Caption2}" Opacity="0.7" />
                     <Button Text="Save Profile" Command="{Binding SaveProfileCommand}" />
                 </VerticalStackLayout>
             </Border>
@@ -113,13 +113,16 @@
 
                 <!-- Kids List -->
                 <CollectionView ItemsSource="{Binding Kids}" SelectionMode="None">
+                    <CollectionView.ItemsLayout>
+                        <LinearItemsLayout Orientation="Vertical" ItemSpacing="8" />
+                    </CollectionView.ItemsLayout>
                     <CollectionView.ItemTemplate>
                         <DataTemplate x:DataType="models:Kid">
                             <Border Style="{StaticResource CardStyle}" Margin="0,0,0,5">
                                 <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
                                     <!-- Avatar circle -->
-                                    <Border WidthRequest="36" HeightRequest="36"
-                                            StrokeShape="RoundRectangle 18"
+                                    <Border WidthRequest="40" HeightRequest="40"
+                                            StrokeShape="RoundRectangle 20"
                                             BackgroundColor="{Binding Color}"
                                             StrokeThickness="0">
                                         <Label Text="{Binding Avatar}" HorizontalOptions="Center" VerticalOptions="Center"
