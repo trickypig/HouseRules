@@ -1,5 +1,5 @@
 import { useState, useEffect, type FormEvent } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import type { Kid, Transaction, RecurringTransaction, SavingsGoal, GoalProjection, Pagination, KidUser } from '../types';
 import * as api from '../api/client';
 import GoalCard from '../components/GoalCard';
@@ -7,7 +7,6 @@ import BalanceChart from '../components/BalanceChart';
 
 export default function KidDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const kidId = Number(id);
 
   const [kid, setKid] = useState<Kid | null>(null);
@@ -127,16 +126,6 @@ export default function KidDetailPage() {
       loadData();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to update');
-    }
-  }
-
-  async function handleDeleteKid() {
-    if (!confirm(`Delete ${kid?.name}? This will remove all their transactions, recurring rules, and goals.`)) return;
-    try {
-      await api.deleteKid(kidId);
-      navigate('/dashboard');
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to delete');
     }
   }
 
