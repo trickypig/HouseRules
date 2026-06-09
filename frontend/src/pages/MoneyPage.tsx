@@ -3,6 +3,13 @@ import { Link } from 'react-router-dom';
 import type { Kid, Transaction } from '../types';
 import * as api from '../api/client';
 
+function todayLocal(): string {
+  const d = new Date();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${month}-${day}`;
+}
+
 export default function MoneyPage() {
   const [kids, setKids] = useState<Kid[]>([]);
   const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([]);
@@ -15,7 +22,7 @@ export default function MoneyPage() {
   const [quickAmount, setQuickAmount] = useState('');
   const [quickCategory, setQuickCategory] = useState('');
   const [quickDesc, setQuickDesc] = useState('');
-  const [quickDate, setQuickDate] = useState(new Date().toISOString().split('T')[0]);
+  const [quickDate, setQuickDate] = useState(todayLocal());
 
   useEffect(() => {
     loadDashboard();
@@ -50,7 +57,7 @@ export default function MoneyPage() {
       setQuickAmount('');
       setQuickCategory('');
       setQuickDesc('');
-      setQuickDate(new Date().toISOString().split('T')[0]);
+      setQuickDate(todayLocal());
       loadDashboard();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to add transaction');

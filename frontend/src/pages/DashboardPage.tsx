@@ -3,6 +3,13 @@ import { Link } from 'react-router-dom';
 import type { Kid, Transaction, ChoreInstance, ShoppingList } from '../types';
 import * as api from '../api/client';
 
+function todayLocal(): string {
+  const d = new Date();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${month}-${day}`;
+}
+
 export default function DashboardPage() {
   const [kids, setKids] = useState<Kid[]>([]);
   const [pendingTransactions, setPendingTransactions] = useState<Transaction[]>([]);
@@ -19,7 +26,7 @@ export default function DashboardPage() {
   const [quickAmount, setQuickAmount] = useState('');
   const [quickCategory, setQuickCategory] = useState('');
   const [quickDesc, setQuickDesc] = useState('');
-  const [quickDate, setQuickDate] = useState(new Date().toISOString().split('T')[0]);
+  const [quickDate, setQuickDate] = useState(todayLocal());
 
   useEffect(() => { loadDashboard(); }, []);
 
@@ -55,7 +62,7 @@ export default function DashboardPage() {
       setQuickAmount('');
       setQuickCategory('');
       setQuickDesc('');
-      setQuickDate(new Date().toISOString().split('T')[0]);
+      setQuickDate(todayLocal());
       setShowQuickTx(false);
       loadDashboard();
     } catch (err: unknown) {
