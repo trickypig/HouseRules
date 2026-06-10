@@ -1,0 +1,66 @@
+workflows:
+  ios-testflight:
+    name: HouseRules iOS TestFlight
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    integrations:
+      # Name of the App Store Connect API key as added in the Codemagic UI
+      # (Teams/Personal Account -> Integrations -> App Store Connect).
+      # Change "codemagic-api" to whatever you named the key.
+      app_store_connect: codemagic-api
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.trickypig.houserules
+      vars:
+        DOTNET_PROJECT: "MAUI/HouseRules/HouseRules.csproj"
+        TARGET_FRAMEWORK: "net10.0-ios"
+      xcode: latest
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+    scripts:
+      - name: Install .NET MAUI workload
+        script: |
+          dotnet --version
+          dotnet workload install maui
+      - name: Initialize keychain
+        script: |
+          # The ios_signing block above has already fetched the distribution
+          # certificate and provisioning profile from App Store Connect and
+          # installed the profile under ~/Library/MobileDevice/Provisioning Profiles.
+          keychain initialize
+      - name: Extract signing identity and profile name
+        script: |
+          # dotnet publish needs the certificate common name and the
+          # provisioning profile NAME (not UUID). Extract both and persist
+          # them to $CM_ENV so the next script can use them.
+          CERT_NAME=$(keychain list-certificates \
+            | jq -r '.[] | select(.common_name | test("Distribution|Apple Development")) | .common_name' \
+            | head -1)
+          PROFILE_PATH=$(find "$HOME/Library/MobileDevice/Provisioning Profiles" -name "*.mobileprovision" -print -quit)
+          PROFILE_NAME=$(security cms -D -i "$PROFILE_PATH" | plutil -extract Name raw -)
+          echo "Using certificate: $CERT_NAME"
+          echo "Using provisioning profile: $PROFILE_NAME"
+          echo "CERT_NAME=$CERT_NAME" >> $CM_ENV
+          echo "PROFILE_NAME=$PROFILE_NAME" >> $CM_ENV
+      - name: Build and sign iOS app
+        script: |
+          dotnet publish "$DOTNET_PROJECT" \
+            -f "$TARGET_FRAMEWORK" \
+            -c Release \
+            -p:ArchiveOnBuild=true \
+            -p:BuildIpa=true \
+            -p:RuntimeIdentifier=ios-arm64 \
+            -p:CodesignKey="$CERT_NAME" \
+            -p:CodesignProvision="$PROFILE_NAME"
+    artifacts:
+      - "**/*.ipa"
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
