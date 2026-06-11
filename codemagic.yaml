@@ -20,8 +20,16 @@ workflows:
         - pattern: main
           include: true
     scripts:
-      - name: Install .NET MAUI workload
+      - name: Install .NET 10 SDK and MAUI workload
         script: |
+          # The Codemagic macOS image does not put a .NET 10 SDK on PATH, so
+          # install it explicitly with Microsoft's official script, then make it
+          # available to this and all later build steps via $CM_ENV.
+          curl -fsSL https://dot.net/v1/dotnet-install.sh -o /tmp/dotnet-install.sh
+          chmod +x /tmp/dotnet-install.sh
+          /tmp/dotnet-install.sh --channel 10.0 --install-dir "$HOME/.dotnet"
+          export PATH="$HOME/.dotnet:$PATH"
+          echo "PATH=$HOME/.dotnet:$PATH" >> $CM_ENV
           dotnet --version
           dotnet workload install maui
       - name: Set up code signing (create cert + profile if missing)
