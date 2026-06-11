@@ -65,6 +65,19 @@ workflows:
           echo "Using provisioning profile: $PROFILE_NAME"
           echo "CERT_NAME=$CERT_NAME" >> $CM_ENV
           echo "PROFILE_NAME=$PROFILE_NAME" >> $CM_ENV
+      - name: Compute next build number from TestFlight
+        script: |
+          # Look up the app's numeric App Store id from its bundle id, then ask
+          # TestFlight for the highest build number already uploaded and add 1.
+          # Falls back to 0 (=> first build is 1) if the app has no builds yet.
+          APP_ID=$(app-store-connect apps list \
+            --bundle-id-identifier "$BUNDLE_ID" \
+            --strict-match-identifier \
+            --json | jq -r '.[0].id')
+          LATEST_BUILD_NUMBER=$(app-store-connect get-latest-testflight-build-number "$APP_ID" --platform IOS || echo "0")
+          BUILD_NUMBER=$(( ${LATEST_BUILD_NUMBER:-0} + 1 ))
+          echo "Next build number: $BUILD_NUMBER"
+          echo "BUILD_NUMBER=$BUILD_NUMBER" >> $CM_ENV
       - name: Build and sign iOS app
         script: |
           dotnet publish "$DOTNET_PROJECT" \
@@ -72,6 +85,7 @@ workflows:
             -c Release \
             -p:ArchiveOnBuild=true \
             -p:BuildIpa=true \
+            -p:ApplicationVersion=$BUILD_NUMBER \
             -p:RuntimeIdentifier=ios-arm64 \
             -p:CodesignKey="$CERT_NAME" \
             -p:CodesignProvision="$PROFILE_NAME"
