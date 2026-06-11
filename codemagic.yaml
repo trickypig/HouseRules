@@ -7,7 +7,7 @@ workflows:
       # Name of the App Store Connect API key as added in the Codemagic UI
       # (Teams/Personal Account -> Integrations -> App Store Connect).
       # Change "codemagic-api" to whatever you named the key.
-      app_store_connect: codemagic-api
+      app_store_connect: House Rules
     environment:
       ios_signing:
         distribution_type: app_store
