@@ -16,7 +16,9 @@ workflows:
         DOTNET_PROJECT: "MAUI/HouseRules/HouseRules.csproj"
         TARGET_FRAMEWORK: "net10.0-ios"
         BUNDLE_ID: "com.trickypig.houserules"
-      xcode: latest
+      # The .NET 10 iOS workload (26.5) requires Xcode 26.5. Codemagic's
+      # "latest" is still 26.4, so pin 26.5 explicitly to match the workload.
+      xcode: 26.5
     triggering:
       events:
         - push
