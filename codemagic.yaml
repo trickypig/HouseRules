@@ -8,6 +8,10 @@ workflows:
       # (Teams/Personal Account -> Integrations -> App Store Connect).
       app_store_connect: House Rules
     environment:
+      groups:
+        # Codemagic variable group that must contain CERTIFICATE_PRIVATE_KEY
+        # (the PEM private key used to create/fetch the distribution certificate).
+        - ios_signing
       vars:
         DOTNET_PROJECT: "MAUI/HouseRules/HouseRules.csproj"
         TARGET_FRAMEWORK: "net10.0-ios"
@@ -42,6 +46,7 @@ workflows:
           keychain initialize
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
+            --certificate-key @env:CERTIFICATE_PRIVATE_KEY \
             --create
           keychain add-certificates
       - name: Extract signing identity and profile name
