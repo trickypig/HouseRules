@@ -21,9 +21,8 @@
         <ScrollView>
             <VerticalStackLayout Spacing="15" Padding="{StaticResource LayoutPadding}">
 
-                <!-- Header with Quick Transaction toggle -->
+                <!-- Header with Quick Transaction toggle (page Title already shows "Dashboard") -->
                 <Grid ColumnDefinitions="*,Auto">
-                    <Label Text="Dashboard" Style="{StaticResource Title1}" />
                     <Button Grid.Column="1" Text="+ Quick Transaction" Command="{Binding ToggleQuickTransactionCommand}" />
                 </Grid>
 
@@ -62,7 +61,7 @@
 
                 <!-- Kids -->
                 <Label Text="Kids" Style="{StaticResource Title2}" />
-                <CollectionView ItemsSource="{Binding Kids}" SelectionMode="None">
+                <CollectionView ItemsSource="{Binding Kids}" SelectionMode="None" HeightRequest="150">
                     <CollectionView.ItemsLayout>
                         <LinearItemsLayout Orientation="Horizontal" ItemSpacing="10" />
                     </CollectionView.ItemsLayout>
@@ -128,11 +127,11 @@
                     </CollectionView.ItemTemplate>
                 </CollectionView>
 
-                <!-- Chores & Shopping Lists side by side -->
-                <Grid ColumnDefinitions="*,*" ColumnSpacing="15">
+                <!-- Chores & Shopping Lists stacked full-width -->
+                <VerticalStackLayout Spacing="15">
 
-                    <!-- Chores Column -->
-                    <Border Style="{StaticResource CardStyle}" Grid.Column="0">
+                    <!-- Chores -->
+                    <Border Style="{StaticResource CardStyle}">
                         <VerticalStackLayout Spacing="8">
                             <Label Text="Chores" Style="{StaticResource Title3}"
                                    TextColor="{Binding HasOverdueChores, Converter={StaticResource BoolToColorConverter}}" />
@@ -170,8 +169,8 @@
                         </VerticalStackLayout>
                     </Border>
 
-                    <!-- Shopping Lists Column -->
-                    <Border Style="{StaticResource CardStyle}" Grid.Column="1">
+                    <!-- Shopping Lists -->
+                    <Border Style="{StaticResource CardStyle}">
                         <VerticalStackLayout Spacing="8">
                             <Label Text="Shopping Lists" Style="{StaticResource Title3}" />
 
@@ -199,7 +198,7 @@
                         </VerticalStackLayout>
                     </Border>
 
-                </Grid>
+                </VerticalStackLayout>
 
                 <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
 
