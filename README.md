@@ -193,12 +193,29 @@ cd house/MAUI/HouseRules
 dotnet publish -f net10.0-android -c Release
 ```
 
+**iOS (release → TestFlight):**
+
+iOS builds run in the cloud on [Codemagic](https://codemagic.io) (no Mac required) and publish to TestFlight automatically — there is no local `dotnet publish` for iOS from Windows. The pipeline is defined in [`codemagic.yaml`](codemagic.yaml).
+
+To ship a new iOS build:
+
+1. (Optional) Bump the user-facing version — edit `<ApplicationDisplayVersion>` in `MAUI/HouseRules/HouseRules.csproj` (e.g. `1.0` → `1.1`). The internal build number auto-increments in CI, so leave `<ApplicationVersion>` alone.
+2. Commit and push to `main`:
+   ```bash
+   git push origin main
+   ```
+3. Codemagic runs the `ios-testflight` workflow: installs the .NET MAUI workload, creates/fetches the Apple signing certificate and provisioning profile, builds a signed `.ipa`, and uploads it to TestFlight.
+4. After a few minutes of Apple processing, the build appears in the **TestFlight** app on your device.
+
+> **First-time setup** (Apple Developer Program, App Store Connect API key, certificate private key, and connecting the repo to Codemagic) is documented in [`docs/codemagic-ios-setup.md`](docs/codemagic-ios-setup.md).
+
 ### Build Configurations Summary
 
 | Platform | Debug (test) | Release (production) |
 |----------|-------------|---------------------|
 | **Android** | `dotnet run -f net10.0-android -c Debug` — deploys to emulator, hits localhost API | `dotnet publish -f net10.0-android -c Release` — signed APK for distribution |
 | **Windows** | `dotnet run -f net10.0-windows10.0.19041.0 -c Debug` — runs locally, hits localhost API | `dotnet publish -f net10.0-windows10.0.19041.0 -c Release` — standalone .exe |
+| **iOS** | Not buildable on Windows (needs macOS) | Push to `main` → Codemagic builds, signs, and uploads to TestFlight (see [`docs/codemagic-ios-setup.md`](docs/codemagic-ios-setup.md)) |
 
 ---
 
