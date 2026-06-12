@@ -4,6 +4,7 @@
              xmlns:pm="clr-namespace:HouseRules.PageModels"
              xmlns:models="clr-namespace:HouseRules.Models"
              xmlns:util="clr-namespace:HouseRules.Utilities"
+             xmlns:f="clr-namespace:Fonts"
              x:Class="HouseRules.Pages.DashboardPage"
              x:DataType="pm:DashboardPageModel"
              Title="Dashboard">
@@ -92,7 +93,7 @@
                     <CollectionView.ItemTemplate>
                         <DataTemplate x:DataType="models:Transaction">
                             <Border Style="{StaticResource CardStyle}" Margin="0,0,0,5">
-                                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
                                     <VerticalStackLayout>
                                         <Label Style="{StaticResource Body1Strong}">
                                             <Label.FormattedText>
@@ -113,14 +114,20 @@
                                             </Label.FormattedText>
                                         </Label>
                                     </VerticalStackLayout>
-                                    <Label Grid.Column="1" Text="{Binding Amount, Converter={StaticResource CurrencyConverter}}"
-                                           Style="{StaticResource Body1Strong}" VerticalOptions="Center" />
-                                    <HorizontalStackLayout Grid.Column="2" Spacing="5">
-                                        <Button Text="Approve" Command="{Binding Source={RelativeSource AncestorType={x:Type pm:DashboardPageModel}}, Path=VerifyTransactionCommand}"
-                                                CommandParameter="{Binding}" BackgroundColor="{StaticResource NeonSuccess}" Padding="10,5" />
-                                        <Button Text="Deny" Command="{Binding Source={RelativeSource AncestorType={x:Type pm:DashboardPageModel}}, Path=CancelTransactionCommand}"
-                                                CommandParameter="{Binding}" BackgroundColor="{StaticResource NeonDanger}" Padding="10,5" />
-                                    </HorizontalStackLayout>
+                                    <VerticalStackLayout Grid.Column="1" Spacing="5" HorizontalOptions="End">
+                                        <Label Text="{Binding Amount, Converter={StaticResource CurrencyConverter}}"
+                                               Style="{StaticResource Body1Strong}" HorizontalOptions="End" />
+                                        <HorizontalStackLayout Spacing="5" HorizontalOptions="End">
+                                            <Button Text="{x:Static f:FluentUI.checkmark_24_regular}" FontFamily="{x:Static f:FluentUI.FontFamily}"
+                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type pm:DashboardPageModel}}, Path=VerifyTransactionCommand}"
+                                                    CommandParameter="{Binding}" BackgroundColor="{StaticResource NeonSuccess}"
+                                                    WidthRequest="40" HeightRequest="40" Padding="0" />
+                                            <Button Text="{x:Static f:FluentUI.dismiss_24_regular}" FontFamily="{x:Static f:FluentUI.FontFamily}"
+                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type pm:DashboardPageModel}}, Path=CancelTransactionCommand}"
+                                                    CommandParameter="{Binding}" BackgroundColor="{StaticResource NeonDanger}"
+                                                    WidthRequest="40" HeightRequest="40" Padding="0" />
+                                        </HorizontalStackLayout>
+                                    </VerticalStackLayout>
                                 </Grid>
                             </Border>
                         </DataTemplate>

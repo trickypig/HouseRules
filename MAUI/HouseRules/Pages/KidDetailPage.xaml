@@ -75,8 +75,8 @@
                 <controls:BalanceChartView ChartData="{Binding ChartData}" Goals="{Binding Goals}"
                                            IsVisible="{Binding ChartData.Count, Converter={StaticResource IsNotNullConverter}}" />
 
-                <!-- Goals + Recurring side by side -->
-                <Grid ColumnDefinitions="*,*" ColumnSpacing="15">
+                <!-- Goals + Recurring: side by side in landscape, stacked in portrait -->
+                <Grid x:Name="GoalsRecurringGrid" RowDefinitions="Auto,Auto" ColumnSpacing="15" RowSpacing="15">
                     <!-- Savings Goals -->
                     <VerticalStackLayout Spacing="10">
                         <Grid ColumnDefinitions="*,Auto">
@@ -144,7 +144,7 @@
                     </VerticalStackLayout>
 
                     <!-- Recurring -->
-                    <VerticalStackLayout Grid.Column="1" Spacing="10">
+                    <VerticalStackLayout x:Name="RecurringPanel" Grid.Row="1" Spacing="10">
                         <Grid ColumnDefinitions="*,Auto">
                             <Label Text="Recurring" Style="{StaticResource Title2}" />
                             <Button Grid.Column="1" Text="+ Add" Command="{Binding ToggleAddRecurringCommand}" Padding="8,4"
@@ -275,8 +275,8 @@
                     </VerticalStackLayout>
                 </Border>
 
-                <!-- Transactions: Recent + Future side by side -->
-                <Grid ColumnDefinitions="*,*" ColumnSpacing="15">
+                <!-- Transactions: side by side in landscape, stacked in portrait -->
+                <Grid x:Name="RecentFutureGrid" RowDefinitions="Auto,Auto" ColumnSpacing="15" RowSpacing="15">
                     <!-- Recent -->
                     <VerticalStackLayout Spacing="10">
                         <Label Text="Recent" Style="{StaticResource Title3}" />
@@ -323,7 +323,7 @@
                     </VerticalStackLayout>
 
                     <!-- Future -->
-                    <VerticalStackLayout Grid.Column="1" Spacing="10">
+                    <VerticalStackLayout x:Name="FuturePanel" Grid.Row="1" Spacing="10">
                         <Label Text="Future" Style="{StaticResource Title3}" />
                         <CollectionView ItemsSource="{Binding FutureTransactions}" SelectionMode="None">
                             <CollectionView.ItemsLayout>
