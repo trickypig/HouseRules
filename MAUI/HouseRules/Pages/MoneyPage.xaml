@@ -21,7 +21,7 @@
 
                 <!-- Kids -->
                 <Label Text="Kids" Style="{StaticResource Title1}" />
-                <CollectionView ItemsSource="{Binding Kids}" SelectionMode="None">
+                <CollectionView ItemsSource="{Binding Kids}" SelectionMode="None" HeightRequest="150">
                     <CollectionView.ItemsLayout>
                         <LinearItemsLayout Orientation="Horizontal" ItemSpacing="10" />
                     </CollectionView.ItemsLayout>
