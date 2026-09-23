@@ -142,12 +142,15 @@ Key decisions, each of which was needed to get a green build:
 3. **Pass the certificate private key.** `--certificate-key @env:CERTIFICATE_PRIVATE_KEY`
    (from Part 2c). *(Symptom if missing: "Cannot save Signing Certificates
    without certificate private key".)*
-4. **Pin the Xcode version.** `.NET 10`'s iOS workload (26.5) requires Xcode 26.5,
-   but Codemagic's `latest` is 26.4. The workflow sets `xcode: 26.5`. *(Symptom
-   if mismatched: "This version of .NET for iOS … requires Xcode 26.5. The
-   current version of Xcode is 26.4.x".)* **Revisit this when .NET or the
-   workload updates** — match the Xcode version to whatever the installed iOS
-   workload demands.
+4. **Pin the Xcode version.** The workflow installs the *latest* .NET 10 iOS
+   workload, and each workload build demands an exact minimum Xcode. Workload
+   `26.5.10318` requires Xcode 26.6, so the workflow sets `xcode: 26.6`
+   (Codemagic's default image since 2026-09-06). *(Symptom if mismatched:
+   "This version of .NET for iOS (26.5.10318) … requires Xcode 26.6. The
+   current version of Xcode is 26.5".)* **Revisit this whenever the workload
+   updates** — the error message names the Xcode version to pin; check
+   [Codemagic's macOS specs](https://docs.codemagic.io/specs/versions-macos/)
+   for the available images.
 5. **Auto-increment the build number.** A step looks up the app's numeric App
    Store ID from the bundle ID, asks TestFlight for the highest build number,
    adds 1, and passes it via `-p:ApplicationVersion=$BUILD_NUMBER`.
