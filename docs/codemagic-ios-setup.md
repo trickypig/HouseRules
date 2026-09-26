@@ -129,10 +129,11 @@ encryption (HTTPS/TLS), which is the typical case:
 
 Key decisions, each of which was needed to get a green build:
 
-1. **Install the .NET 10 SDK explicitly.** The Codemagic macOS image doesn't put
-   `dotnet` on PATH, so the workflow runs `dotnet-install.sh --channel 10.0` and
-   persists the path via `$CM_ENV` for later steps. *(Symptom if missing:
-   `dotnet: command not found`, exit 127.)*
+1. **Install the .NET SDK explicitly.** The Codemagic macOS image doesn't put
+   `dotnet` on PATH, so the workflow runs `dotnet-install.sh --channel 10.0.2xx`
+   and persists the path via `$CM_ENV` for later steps. *(Symptom if missing:
+   `dotnet: command not found`, exit 127.)* The channel is a feature band, not
+   bare `10.0`, so it stays compatible with the pinned workload set (item 4).
 2. **Create signing files with a script, not the declarative block.** The
    `environment.ios_signing:` block only *fetches existing* profiles, so for a
    brand-new app it fails. Instead the workflow runs
@@ -142,15 +143,50 @@ Key decisions, each of which was needed to get a green build:
 3. **Pass the certificate private key.** `--certificate-key @env:CERTIFICATE_PRIVATE_KEY`
    (from Part 2c). *(Symptom if missing: "Cannot save Signing Certificates
    without certificate private key".)*
-4. **Pin the Xcode version.** The workflow installs the *latest* .NET 10 iOS
-   workload, and each workload build demands an exact minimum Xcode. Workload
-   `26.5.10318` requires Xcode 26.6, so the workflow sets `xcode: 26.6`
-   (Codemagic's default image since 2026-09-06). *(Symptom if mismatched:
-   "This version of .NET for iOS (26.5.10318) … requires Xcode 26.6. The
-   current version of Xcode is 26.5".)* **Revisit this whenever the workload
-   updates** — the error message names the Xcode version to pin; check
-   [Codemagic's macOS specs](https://docs.codemagic.io/specs/versions-macos/)
-   for the available images.
+4. **Pin the workload set and the Xcode version together.** Each .NET iOS
+   workload build demands an exact *minimum* Xcode, so an unpinned
+   `dotnet workload install maui` can break `main` with no commit from you —
+   Microsoft ships a new manifest, its Xcode floor rises, and the next build
+   fails. `global.json` at the repo root therefore pins both:
+
+   ```json
+   {
+     "sdk": {
+       "version": "10.0.200",
+       "rollForward": "latestPatch",
+       "workloadVersion": "10.0.204.1"
+     }
+   }
+   ```
+
+   `sdk.workloadVersion` is a *workload set* — one version naming a group of
+   workload manifests (iOS, Android, MacCatalyst) that shipped and were tested
+   together. Its presence alone switches the CLI into `workload-set` update
+   mode, so `dotnet workload install maui` installs that exact set instead of
+   the newest loose manifests. The workflow runs the workload commands from
+   `$CM_BUILD_DIR` so `global.json` is actually discovered.
+
+   `xcode:` must then match what that set's iOS SDK requires — workload set
+   `10.0.204.1` carries iOS SDK `26.5.10318`, which requires Xcode 26.6, so the
+   workflow sets `xcode: 26.6` (Codemagic's default image since 2026-09-06).
+   *(Symptom if mismatched: "This version of .NET for iOS (26.5.10318) …
+   requires Xcode 26.6. The current version of Xcode is 26.5".)*
+
+   **Three versions must stay aligned:** the SDK feature band (`10.0.2xx`), the
+   workload set (`10.0.2xx.y`), and Xcode. A workload set only installs on an
+   SDK of the same feature band.
+
+   **To upgrade deliberately** (nothing moves until you do this):
+   1. `dotnet workload update` locally, then `dotnet workload --version` to get
+      the new set number — or pick one from the
+      [`Microsoft.NET.Workloads.10.0.200`](https://www.nuget.org/packages?q=Microsoft.NET.Workloads)
+      package versions.
+   2. Put it in `global.json`. If the band changed (`2xx` → `3xx`), bump
+      `sdk.version` and the workflow's `--channel` to match.
+   3. Build. If it fails the Xcode check, the error names the version to pin;
+      confirm it exists in
+      [Codemagic's macOS specs](https://docs.codemagic.io/specs/versions-macos/)
+      and update `xcode:`.
 5. **Auto-increment the build number.** A step looks up the app's numeric App
    Store ID from the bundle ID, asks TestFlight for the highest build number,
    adds 1, and passes it via `-p:ApplicationVersion=$BUILD_NUMBER`.
@@ -182,7 +218,8 @@ non-exempt encryption → Save. The build then becomes available to testers.
 | `dotnet: command not found` (exit 127) | .NET not on PATH. The install step uses `dotnet-install.sh` and writes PATH to `$CM_ENV`; ensure later steps run after it. |
 | `No matching profiles found for bundle identifier … and distribution type app_store` | Using the fetch-only `ios_signing` block with no existing profile. Use the script-based `fetch-signing-files … --create` (Part 4, item 2). |
 | `Cannot save Signing Certificates without certificate private key` | `CERTIFICATE_PRIVATE_KEY` missing or not in the workflow's group. See Part 2c. |
-| `This version of .NET for iOS … requires Xcode 26.x` | Xcode/workload mismatch. Set `xcode:` to the version the workload needs (Part 4, item 4). |
+| `This version of .NET for iOS … requires Xcode 26.x` | Xcode/workload mismatch. Set `xcode:` to the version named in the error (Part 4, item 4). If the workload version in the message isn't the one pinned in `global.json`, the pin isn't being picked up — check the workload step runs from `$CM_BUILD_DIR`. |
+| `Workload set version 10.0.x.y was not found` / workload install resolves the wrong version | The SDK feature band doesn't match the pinned workload set's band. Align `dotnet-install.sh --channel`, `sdk.version`, and `sdk.workloadVersion` (Part 4, item 4). |
 | `Using certificate:` is empty in the "Extract signing identity" step | Adjust the `jq … test("Distribution\|Apple Development")` filter in `codemagic.yaml` to match the certificate common name printed by `keychain list-certificates` (e.g. `Apple Distribution: Your Name (TEAMID)`). |
 | `Using provisioning profile:` is empty | Confirm `$BUNDLE_ID` matches the app's bundle ID and the API key has permission to create profiles. |
 | TestFlight rejects the build as a duplicate | Build number collision — the auto-increment step should prevent this; verify it ran and that `-p:ApplicationVersion=$BUILD_NUMBER` is on the publish command. |

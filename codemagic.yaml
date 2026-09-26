@@ -16,9 +16,10 @@ workflows:
         DOTNET_PROJECT: "MAUI/HouseRules/HouseRules.csproj"
         TARGET_FRAMEWORK: "net10.0-ios"
         BUNDLE_ID: "com.trickypig.houserules"
-      # The .NET 10 iOS workload (26.5.10318) requires Xcode 26.6. Codemagic
-      # made 26.6 the default image on 2026-09-06; pin it explicitly so a
-      # future default bump can't silently move us off a matching Xcode.
+      # Must match what the pinned workload set (global.json, currently
+      # 10.0.204.1) demands: its iOS SDK requires Xcode 26.6. Codemagic made
+      # 26.6 the default image on 2026-09-06; pin it explicitly so a future
+      # default bump can't silently move us off a matching Xcode.
       xcode: 26.6
     triggering:
       events:
@@ -27,18 +28,27 @@ workflows:
         - pattern: main
           include: true
     scripts:
-      - name: Install .NET 10 SDK and MAUI workload
+      - name: Install .NET SDK and MAUI workload
         script: |
           # The Codemagic macOS image does not put a .NET 10 SDK on PATH, so
           # install it explicitly with Microsoft's official script, then make it
           # available to this and all later build steps via $CM_ENV.
+          #
+          # The channel is pinned to the 10.0.2xx feature band (not bare "10.0")
+          # because global.json pins a 10.0.2xx workload set, and a workload set
+          # only installs on an SDK of the same band.
           curl -fsSL https://dot.net/v1/dotnet-install.sh -o /tmp/dotnet-install.sh
           chmod +x /tmp/dotnet-install.sh
-          /tmp/dotnet-install.sh --channel 10.0 --install-dir "$HOME/.dotnet"
+          /tmp/dotnet-install.sh --channel 10.0.2xx --install-dir "$HOME/.dotnet"
           export PATH="$HOME/.dotnet:$PATH"
           echo "PATH=$HOME/.dotnet:$PATH" >> $CM_ENV
           dotnet --version
+          # Run from the clone root so global.json is discovered: its
+          # sdk.workloadVersion puts the CLI in workload-set update mode and
+          # installs that exact set instead of the newest loose manifests.
+          cd "$CM_BUILD_DIR"
           dotnet workload install maui
+          echo "Workload set in use: $(dotnet workload --version)"
       - name: Set up code signing (create cert + profile if missing)
         script: |
           # Initialize the build keychain, then fetch signing files via the
