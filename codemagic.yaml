@@ -16,11 +16,12 @@ workflows:
         DOTNET_PROJECT: "MAUI/HouseRules/HouseRules.csproj"
         TARGET_FRAMEWORK: "net10.0-ios"
         BUNDLE_ID: "com.trickypig.houserules"
-      # Must match what the pinned workload set (global.json, currently
-      # 10.0.204.1) demands: its iOS SDK requires Xcode 26.6. Codemagic made
-      # 26.6 the default image on 2026-09-06; pin it explicitly so a future
-      # default bump can't silently move us off a matching Xcode.
-      xcode: 26.6
+      # Must EXACTLY match what the pinned workload set (global.json,
+      # currently 10.0.204.1) demands -- the check rejects a newer Xcode just
+      # as it rejects an older one. That set carries iOS SDK 26.4.10259, which
+      # requires Xcode 26.4. Codemagic's default is 26.6, so this pin is what
+      # keeps the two in step; bump both together or not at all.
+      xcode: 26.4
     triggering:
       events:
         - push
